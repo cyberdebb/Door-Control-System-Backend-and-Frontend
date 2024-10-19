@@ -12,6 +12,7 @@ async function conecta() {
   
   professores = await db.collection("professores");
   salas = await db.collection("salas");
+  tokens = await db.collection("tokens");
 
   try {
     await populaProfessores();
@@ -22,7 +23,7 @@ async function conecta() {
     throw error;
   }
 
-  return {db, professores, salas};
+  return { db, professores, salas, tokens };
 }
 
 

@@ -24,12 +24,13 @@ createApp({
             });
 
             // Verificando a resposta do servidor
-            if (response.redirected) {
-                window.location.href = response.url; 
-            } 
-            else {
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('token', data.token); // Armazena o token no localStorage
+                window.location.href = 'menu.html';
+            } else {
                 const errorMessage = await response.text();
-                alert(errorMessage); 
+                alert(errorMessage);
             }
         } 
         catch (error) {

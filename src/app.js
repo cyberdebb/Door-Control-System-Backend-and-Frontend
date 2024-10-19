@@ -1,10 +1,12 @@
 var express = require('express');
 const webSocket = require('ws');
 const { conecta, salasDisponiveis, hashSenha, populaProfessores, populaSalas, login } = require('models/database');
-const { createHmac } = require('node:crypto');
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
 
 var app = express();
+dotenv.config();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -12,6 +14,7 @@ app.use(express.static(__dirname + '/public'));
 
 const wss = new webSocket.Server({ port:8080 });
 
+const SECRET_KEY = process.env.SECRET_KEY;
 
 //APP
 app.get('/', function(req, res) {
@@ -29,16 +32,58 @@ app.post('/login', async function(req, res) {
     let professor = await login({id:idUFSC, senha:hash});
 
     if (professor) {
-      res.redirect('/menu.html');
+      // Gera um novo token de acesso
+      const token = jwt.sign({ id: professor.id }, SECRET_KEY, { expiresIn: '1h' });
+
+      await tokensCollection.insertOne({
+        userId: professor.id,
+        token: token,
+        createdAt: new Date()
+      });
+
+      res.json({ message: "Login bem-sucedido", token: token });
     } 
     else {
-      res.send("Login inválido");
+      res.status(401).send("Login inválido");
     }
   } 
   catch (error) {
     console.log("Erro ao fazer o login", error);
     res.status(500).json({error: error.message});
   }
+});
+
+// Middleware para verificar o token em rotas protegidas
+async function verificarToken(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1];
+
+  if (!token) {
+      return res.status(403).send("Token não fornecido!");
+  }
+
+  try {
+      // Verifica se o token é válido
+      const decoded = jwt.verify(token, SECRET_KEY);
+
+      // Verifica se o token existe na coleção
+      const storedToken = await tokensCollection.findOne({ token: token });
+
+      if (!storedToken) {
+          return res.status(401).send("Token inválido ou expirado!");
+      }
+
+      req.userId = decoded.id; // Armazena o ID do usuário decodificado
+      next();
+  } catch (error) {
+      console.error("Erro ao verificar o token:", error);
+      return res.status(401).send("Token inválido!");
+  }
+}
+
+
+// Exemplo de rota protegida
+app.get('/protegido', verificarToken, (req, res) => {
+  res.send(`Acesso concedido para o usuário com ID: ${req.userId}`);
 });
 
 
