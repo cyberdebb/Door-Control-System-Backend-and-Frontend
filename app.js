@@ -1,23 +1,27 @@
 var express = require('express');
 const webSocket = require('ws');
-const { conecta, salasDisponiveis, hashSenha, populaProfessores, populaSalas, login } = require('models/database');
-const { verificarToken } = require('models/tokens');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 
-var app = express();
-dotenv.config();
+const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
+const { getClient, verificarToken } = require('./src/models/tokens');
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+var app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+
+dotenv.config();
 
 const wss = new webSocket.Server({ port:8080 });
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
 //APP
+iniciaServidor();
+
 app.get('/', function(req, res) {
   res.redirect('/login.html');
 });
@@ -27,26 +31,35 @@ app.post('/login', async function(req, res) {
   const idUFSC = req.body.idUFSC;
   const senha = req.body.senha;
 
+  const client = getClient();
+  const tokensCollection = getTokensCollection();
   const hash = hashSenha(senha);
 
   try {
-    let professor = await login({id:idUFSC, senha:hash});
+    let professor = await login({idUFSC:idUFSC, senha:hash});
 
     if (professor) {
       // Gera um novo token de acesso
-      const token = jwt.sign({ id: professor.id }, SECRET_KEY, { expiresIn: '1h' });
+      const token = jwt.sign({ idUFSC: professor._id }, SECRET_KEY, { expiresIn: '1h' });
 
-      await client.set(`token:${professor.id}`, token, {
+      await client.set(`token:${professor._id}`, token, {
         EX: 3600 // Expira em 1 hora
       });
 
+      const createdAt = new Date();
+      const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+          dateStyle: 'short',
+          timeStyle: 'long'
+      }).format(createdAt);
+
       await tokensCollection.insertOne({
-        userId: professor.id,
+        idUFSC: professor._id,
         token: token,
-        createdAt: new Date()
+        createdAt: formattedDate
       });
 
-      res.json({ message: "Login bem-sucedido", token: token });
+      res.json({ message: "Login bem sucedido", token: token });
     } 
     else {
       res.status(401).send("Login inválido");
@@ -56,12 +69,6 @@ app.post('/login', async function(req, res) {
     console.log("Erro ao fazer o login", error);
     res.status(500).json({error: error.message});
   }
-});
-
-
-// Exemplo de rota protegida
-app.get('/protegido', verificarToken, (req, res) => {
-  res.send(`Acesso concedido para o usuário com ID: ${req.userId}`);
 });
 
 
@@ -84,10 +91,25 @@ app.get('/abre',function(req,res) {
 
 });
 
+app.get('/api/salas', verificarToken, async (req, res) => {
+  try {
+      const idUFSC = req.idUFSC;
+      const salas = await salasDisponiveis(idUFSC);
+
+      if (salas) {
+          res.json(salas); // Retorna as salas como JSON
+      } else {
+          res.status(404).send('Nenhuma sala disponível para esse usuário');
+      }
+  } catch (error) {
+      console.error('Erro ao buscar as salas:', error);
+      res.status(500).json({ error: 'Erro ao buscar as salas' });
+  }
+});
 
 app.get(/^(.+)$/, function(req, res) {
   try {
-      res.write("A página que vc busca não existe")
+      res.write("A pagina que vc busca nao existe")
       res.end();
   } catch (e) {
       res.end();
@@ -98,8 +120,6 @@ app.get(/^(.+)$/, function(req, res) {
 async function iniciaServidor() {
   try {
     await conecta();
-    await populaProfessores();
-    await populaSalas();
 
     app.listen(3000, () => {
       console.log('Servidor rodando na porta 3000');
@@ -110,7 +130,6 @@ async function iniciaServidor() {
   }
 }
 
-iniciaServidor();
 //END APP
 
 

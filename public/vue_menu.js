@@ -1,44 +1,31 @@
 const { createApp } = Vue;
-const { salasDisponiveis } = require('../src/models/database');
 
 createApp({
     data() {
         return {
-            currentSection: 'salas', 
             salas: [],
             idUFSC: ''
         };
     },
     methods: {
-        showSection(section) {
-            this.currentSection = section; 
-        },
         async fetchSalas() {
-            try {
-                this.salas = await salasDisponiveis(this.idUFSC);
-            } 
-            catch (error) {
-                alert(errorMessage); 
-            }
-        },
-        async acessarProtegido() {
             const token = localStorage.getItem('token'); // Recupera o token do localStorage
     
             try {
-                const response = await fetch('protegido', {
+                const response = await fetch('/api/salas', {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}` // Envia o token no cabeçalho
+                        'Authorization': `Bearer ${token}`, // Envia o token no cabeçalho
+                        'Content-Type': 'application/json'
                     }
                 });
     
                 if (response.ok) {
-                    const data = await response.text(); // Lê a resposta
-                    alert(data); // Mostra a resposta da rota protegida
+                    this.salas = await response.json();
                 } 
                 else {
                     const errorMessage = await response.text();
-                    alert(errorMessage); // Mostra mensagem de erro
+                    alert('Erro ao carregar salas: ' + errorMessage);                
                 }
             } 
             catch (error) {
@@ -53,5 +40,8 @@ createApp({
         logout() {
             window.location.href = 'login.html';
         }
+    },
+    mounted() {
+        this.fetchSalas();
     }
-}).mount('#vue_app');
+}).mount('#vue_menu');

@@ -1,8 +1,13 @@
 const cron = require('node-cron');
 const redis = require('redis');
+const jwt = require('jsonwebtoken'); 
+const dotenv = require('dotenv');
+
 const { getTokensCollection } = require('./database');
 
-const tokens = getTokensCollection();
+dotenv.config()
+
+const SECRET_KEY = process.env.SECRET_KEY;
 
 // Cria um cliente Redis
 const client = redis.createClient({
@@ -17,43 +22,57 @@ client.on('error', (err) => {
 
 
 async function verificarToken(req, res, next) {
+    const tokensCollection = getTokensCollection();
+
     const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!tokensCollection) {
+        console.error("tokensCollection is not initialized.");
+        return res.status(500).send("Internal server error");
+    }
 
     if (!token) {
         return res.status(403).send("Token não fornecido!");
     }
 
-    // Primeiro, tenta buscar o token no Redis
-    const storedToken = await client.get(`token:${req.userId}`);
+    try {
+        // Verifica e decodifica o token JWT
+        const decoded = jwt.verify(token, SECRET_KEY); // SECRET_KEY deve estar corretamente definido
+        
+        // Agora temos o idUFSC decodificado (e-mail do usuário)
+        req.idUFSC = decoded.idUFSC;
 
-    if (!storedToken) {
-        // Se não encontrar no Redis, buscar no banco de dados
-        try {
-            const tokenDoc = await tokens.findOne({ token: token });
+        // Tenta buscar o token no Redis usando o idUFSC
+        const storedToken = await client.get(`token:${req.idUFSC}`);
+
+        if (!storedToken) {
+            // Se não encontrar no Redis, buscar no MongoDB
+            const tokenDoc = await tokensCollection.findOne({ token: token });
+
             if (!tokenDoc) {
                 return res.status(401).send("Token inválido ou expirado!");
             }
-        } catch (error) {
-            console.error("Erro ao acessar o banco de dados:", error);
-            return res.status(500).send("Erro ao verificar o token.");
+        } else if (storedToken !== token) {
+            return res.status(401).send("Token inválido ou expirado!");
         }
-    } else if (storedToken !== token) {
-        return res.status(401).send("Token inválido ou expirado!");
-    }
 
-    // Se o token for válido, decodifica
-    jwt.verify(token, SECRET_KEY, (error, decoded) => {
-        if (error) {
-            console.error("Token inválido:", error);
+        // Se passar por todas as verificações, prossegue
+        next();
+    } catch (error) {
+        console.error("Erro ao verificar o token:", error);
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).send("Token expirado!");
+        } else {
             return res.status(401).send("Token inválido!");
         }
-        req.userId = decoded.id; // Armazena o ID do usuário decodificado
-        next(); // Prossegue para a próxima rota
-    });
+    }
 }
 
+
 cron.schedule('0 * * * *', async () => {
-    const result = await tokens.deleteMany({
+    const tokensCollection = getTokensCollection();
+
+    const result = await tokensCollection.deleteMany({
         createdAt: { $lt: new Date(Date.now() - 3600 * 1000 * 10) } // Remove tokens mais antigos que 10 horas
     });
     console.log(`Tokens expirados removidos: ${result.deletedCount}`);
@@ -61,5 +80,6 @@ cron.schedule('0 * * * *', async () => {
 
 
 module.exports = {
+    getClient: () => client,
     verificarToken,
   };

@@ -8,13 +8,24 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.9.0",
+    "node-cron": "^3.0.3",
     "redis": "^4.7.0",
     "socket.io": "^4.8.0",
     "websocket": "^1.0.34",
     "ws": "^8.18.0"
   },
   "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyberdebb/Door-control-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cyberdebb/Door-control-system/issues"
+  },
+  "homepage": "https://github.com/cyberdebb/Door-control-system#readme",
   "description": ""
 }
