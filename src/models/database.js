@@ -2,8 +2,7 @@ const {MongoClient} = require('mongodb');
 const { createHmac } = require('crypto');
 const fs = require('fs').promises;  // Usando a versão assíncrona do fs
 
-var db, professores, salas;
-
+var db, professores, salas, tokens;
 
 async function conecta() {
   const client = new MongoClient('mongodb://127.0.0.1:27017');
@@ -115,6 +114,7 @@ async function login(dados) {
 
 module.exports = {
   conecta,
+  getTokensCollection: () => tokens,
   salasDisponiveis,
   hashSenha,
   populaProfessores,

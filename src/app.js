@@ -1,6 +1,7 @@
 var express = require('express');
 const webSocket = require('ws');
 const { conecta, salasDisponiveis, hashSenha, populaProfessores, populaSalas, login } = require('models/database');
+const { verificarToken } = require('models/tokens');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
@@ -35,6 +36,10 @@ app.post('/login', async function(req, res) {
       // Gera um novo token de acesso
       const token = jwt.sign({ id: professor.id }, SECRET_KEY, { expiresIn: '1h' });
 
+      await client.set(`token:${professor.id}`, token, {
+        EX: 3600 // Expira em 1 hora
+      });
+
       await tokensCollection.insertOne({
         userId: professor.id,
         token: token,
@@ -52,33 +57,6 @@ app.post('/login', async function(req, res) {
     res.status(500).json({error: error.message});
   }
 });
-
-// Middleware para verificar o token em rotas protegidas
-async function verificarToken(req, res, next) {
-  const token = req.headers['authorization']?.split(' ')[1];
-
-  if (!token) {
-      return res.status(403).send("Token não fornecido!");
-  }
-
-  try {
-      // Verifica se o token é válido
-      const decoded = jwt.verify(token, SECRET_KEY);
-
-      // Verifica se o token existe na coleção
-      const storedToken = await tokensCollection.findOne({ token: token });
-
-      if (!storedToken) {
-          return res.status(401).send("Token inválido ou expirado!");
-      }
-
-      req.userId = decoded.id; // Armazena o ID do usuário decodificado
-      next();
-  } catch (error) {
-      console.error("Erro ao verificar o token:", error);
-      return res.status(401).send("Token inválido!");
-  }
-}
 
 
 // Exemplo de rota protegida
