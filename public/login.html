@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    
+    <!-- Importa Vue.js via CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Link para o CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="vue_app">
+        <h1>Login</h1>
+
+        <!-- Formulário de login -->
+        <form @submit.prevent="handleLogin">
+            <label for="idUFSC">ID UFSC:</label>
+            <input type="text" v-model="idUFSC" placeholder="Digite seu ID UFSC" required><br><br>
+
+            <label for="senha">Senha:</label>
+            <input type="password" v-model="senha" placeholder="Digite sua senha" required><br><br>
+
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+
+    <!-- Importa o script Vue -->
+    <script src="vue_app.js"></script>
+</body>
+</html>
