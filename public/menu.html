@@ -1,4 +1,38 @@
 <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
 <body>
-    oi vey
+    <div id="vue_app">
+        <h1>Bem-vindo ao Menu</h1>
+        <p>Escolha uma das opções abaixo:</p>
+
+        <ul>
+            <li><button @click="showSection('salas')">Ver Salas Disponíveis</button></li>
+            <li><button @click="showSection('sair')">Sair</button></li>
+        </ul>
+
+        <div v-if="currentSection === 'salas'">
+            <h2>Salas Disponíveis</h2>
+            <p>Aqui estão as salas disponíveis:</p>
+            <ul>
+                <li v-for="sala in salas" :key="sala">
+                    {{ sala }}
+                    <button @click="abrirSala(sala)">Abrir</button>
+                </li>
+            </ul>
+            <button @click="fetchSalas">Carregar Salas</button>
+        </div>        
+
+        <div v-if="currentSection === 'sair'">
+            <h2>Sair</h2>
+            <p>Você saiu do sistema.</p>
+            <button @click="logout">Voltar ao Login</button>
+        </div>
+    </div>
 </body>
+</html>
