@@ -4,6 +4,7 @@ const fs = require('fs').promises;  // Usando a versão assíncrona do fs
 
 var db, professores, salas;
 
+
 async function conecta() {
   const client = new MongoClient('mongodb://127.0.0.1:27017');
   await client.connect();
@@ -37,7 +38,7 @@ async function salasDisponiveis(idUFSC) {
     }
   } 
   catch (error) {
-    console.error('Erro ao buscar portas disponíveis:', error.message);
+    console.error('Erro ao buscar portas disponíveis: ', error.message);
     throw error;
   }
 }
@@ -47,6 +48,7 @@ function hashSenha(senha) {
             .update(senha)
             .digest('hex');
 }
+
 
 async function populaProfessores() {
   try {
@@ -69,7 +71,7 @@ async function populaProfessores() {
     console.log('Professores inseridos com sucesso!');
   } 
   catch (error) {
-    console.error('Erro ao popular o banco de dados:', error);
+    console.error('Erro ao popular o banco de dados: ', error);
     throw error;
   }
 }
@@ -86,10 +88,11 @@ async function populaSalas() {
     console.log('Salas inseridas com sucesso!');
   } 
   catch (error) {
-    console.error('Erro ao popular o banco de dados:', error);
+    console.error('Erro ao popular o banco de dados: ', error);
     throw error;
   }
 }
+
 
 async function login(dados) {
   try {
@@ -103,7 +106,7 @@ async function login(dados) {
     }
   }
   catch (error) {
-    console.error('Erro ao popular o banco de dados:', error);
+    console.error('Erro ao fazer o login: ', error);
     throw error;
   }
 }

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +11,6 @@
     <!-- Link para o CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div id="vue_app">
         <h1>Login</h1>
@@ -27,24 +25,9 @@
 
             <button type="submit">Entrar</button>
         </form>
-
-        <!-- Tabela de alunos -->
-        <table class="table" v-if="alunos.length">
-            <thead>
-                <tr>
-                    <th>Nome do Aluno</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="aluno in alunos" :key="aluno.id">
-                    <td>{{ aluno.nome }}</td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 
     <!-- Importa o script Vue -->
     <script src="vue_app.js"></script>
 </body>
-
 </html>
