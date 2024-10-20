@@ -4,15 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu</title>
+
+    <!-- Importa Vue.js via CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Link para o CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="vue_menu">
-        <h1>Bem-vindo ao Menu</h1>
+        <h1>Salas Disponíveis</h1>
         
-        <h2>Salas Disponíveis</h2>
+        <p>Selecione a sala que você deseja abrir</p>
         <ul>
             <li v-for="sala in salas" :key="sala">
+                <img src="./porta.png" alt="porta" width="50" height="50">
                 {{ sala }}
                 <button @click="abrirSala(sala)">Abrir</button>
             </li>
