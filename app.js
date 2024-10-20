@@ -3,6 +3,7 @@ const webSocket = require('ws');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const { zonedTimeToUtc } = require('date-fns-tz');
 
 const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
@@ -46,17 +47,13 @@ app.post('/login', async function(req, res) {
         EX: 3600 // Expira em 1 hora
       });
 
-      const createdAt = new Date();
-      const formattedDate = new Intl.DateTimeFormat('pt-BR', {
-          timeZone: 'America/Sao_Paulo',
-          dateStyle: 'short',
-          timeStyle: 'long'
-      }).format(createdAt);
-
+      const timeZone = 'America/Sao_Paulo';
+      const timeNow = zonedTimeToUtc(new Date(), timeZone);
+      
       await tokensCollection.insertOne({
         idUFSC: professor._id,
         token: token,
-        createdAt: formattedDate
+        createdAt: timeNow
       });
 
       res.json({ message: "Login bem sucedido", token: token });

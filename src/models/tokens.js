@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const redis = require('redis');
 const jwt = require('jsonwebtoken'); 
 const dotenv = require('dotenv');
+const { utcToZonedTime, zonedTimeToUtc } = require('date-fns-tz');
 
 const { getTokensCollection } = require('./database');
 
@@ -71,10 +72,19 @@ async function verificarToken(req, res, next) {
 
 cron.schedule('0 * * * *', async () => {
     const tokensCollection = getTokensCollection();
+    const timeZone = 'America/Sao_Paulo';
 
+    const now = new Date();
+    const timeNow = zonedTimeToUtc(now, timeZone);
+
+    // Calcule o limite de tempo (1 hora atrás)
+    const expirationThreshold = new Date(timeNow.getTime() - 3600 * 1000);
+
+    // Apague tokens com createdAt menor que o limite de expiração
     const result = await tokensCollection.deleteMany({
-        createdAt: { $lt: new Date(Date.now() - 3600 * 1000 * 10) } // Remove tokens mais antigos que 10 horas
+        createdAt: { $lt: expirationThreshold }
     });
+
     console.log(`Tokens expirados removidos: ${result.deletedCount}`);
 });
 

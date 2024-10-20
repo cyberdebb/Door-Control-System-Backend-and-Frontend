@@ -14,7 +14,7 @@ async function conecta() {
   
   professores = await db.collection("professores");
   salas = await db.collection("salas");
-  tokensCollection = await db.collection("tokensCollection");
+  tokensCollection = await db.collection("tokens");
 
   try {
     await populaProfessores();
