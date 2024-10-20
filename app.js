@@ -3,7 +3,6 @@ const webSocket = require('ws');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-const { zonedTimeToUtc } = require('date-fns-tz');
 
 const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
@@ -24,7 +23,6 @@ const SECRET_KEY = process.env.SECRET_KEY;
 iniciaServidor();
 
 app.get('/', function(req, res) {
-  res.redirect('/login.html');
 });
 
 
@@ -47,8 +45,7 @@ app.post('/login', async function(req, res) {
         EX: 3600 // Expira em 1 hora
       });
 
-      const timeZone = 'America/Sao_Paulo';
-      const timeNow = zonedTimeToUtc(new Date(), timeZone);
+      const timeNow = new Date();
       
       await tokensCollection.insertOne({
         idUFSC: professor._id,

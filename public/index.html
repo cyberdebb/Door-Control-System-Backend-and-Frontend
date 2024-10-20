@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecionamento</title>
+</head>
+<body>
+    <script>
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Envia o token para o servidor verificar
+            fetch('/verificar-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ token })
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/menu.html';
+                } else {
+                    // Token inválido ou expirado
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html';
+                }
+            })
+            .catch(error => {
+                console.error('Erro na verificação do token:', error);
+                window.location.href = '/login.html';
+            });
+        } else {
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
