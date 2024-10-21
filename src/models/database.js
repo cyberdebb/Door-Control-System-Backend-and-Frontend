@@ -2,16 +2,19 @@ const {MongoClient} = require('mongodb');
 const { createHmac } = require('crypto');
 const fs = require('fs').promises;  // Usando a versão assíncrona do fs
 
-var db, professores, salas, tokens;
+const client = new MongoClient('mongodb://127.0.0.1:27017');
+const dbName = "DOOR-CONTROL";
+var db, professores, salas, tokensCollection;
 
 async function conecta() {
-  const client = new MongoClient('mongodb://127.0.0.1:27017');
   await client.connect();
-  db = await client.db("DOOR-CONTROL");
+  db = await client.db(dbName);
+
+  // await db.dropDatabase();
   
   professores = await db.collection("professores");
   salas = await db.collection("salas");
-  tokens = await db.collection("tokens");
+  tokensCollection = await db.collection("tokens");
 
   try {
     await populaProfessores();
@@ -21,24 +24,22 @@ async function conecta() {
     console.log('Erro ao popular os dados: ', error);
     throw error;
   }
-
-  return { db, professores, salas, tokens };
 }
 
 
 async function salasDisponiveis(idUFSC) {
   try {
-    const professor = await professores.findOne({id:idUFSC});
+    const professor = await professores.findOne({_id:idUFSC});
 
     if (professor) {
       return professor.salasDisponiveis;
     } 
     else {
-      throw new Error(`Professor com ID ${idUFSC} não encontrado!`);
+      throw new Error(`Professor com email ${idUFSC} não encontrado!`);
     }
   } 
   catch (error) {
-    console.error('Erro ao buscar portas disponíveis: ', error.message);
+    console.error('Erro ao buscar salas disponíveis: ', error.message);
     throw error;
   }
 }
@@ -53,22 +54,29 @@ function hashSenha(senha) {
 async function populaProfessores() {
   try {
     // Lê o arquivo JSON contendo os professores
-    const data = await fs.readFile('professores.json', 'utf8');
+    const data = await fs.readFile(`${__dirname}/professores.json`, 'utf8');
     let professores_dados = JSON.parse(data);
 
     // Hasheia as senhas dos professores antes de inserir no banco
-    professores_dados = professores_dados.map(prof => {
+    professores_dados = professores_dados.map(p => {
       return {
-        nome: prof.nome,
-        idUFSC: prof.idUFSC,
-        salasDisponiveis: prof.salasDisponiveis,
-        senha: hashSenha(prof.senha)  // Aplica o hash na senha
+        _id: p.idUFSC,
+        nome: p.nome,
+        salasDisponiveis: p.salasDisponiveis,
+        senha: hashSenha(p.senha)  // Aplica o hash na senha
       };
     });
 
-    // Insere os professores no banco de dados com as senhas hasheadas
-    await professores.insertMany(professores_dados);
+    for (let professor of professores_dados) {
+      // Usa upsert: se o professor existir, atualiza; se não, insere
+      await professores.updateOne(
+          { _id: professor._id }, 
+          { $set: professor }, 
+          { upsert: true }
+      );
+    }
     console.log('Professores inseridos com sucesso!');
+
   } 
   catch (error) {
     console.error('Erro ao popular o banco de dados: ', error);
@@ -80,11 +88,20 @@ async function populaProfessores() {
 async function populaSalas() {
   try {
     // Lê o arquivo JSON contendo as portas
-    const data = await fs.readFile('salas.json', 'utf8');
-    const salas_dados = JSON.parse(data);
+    const data = await fs.readFile(`${__dirname}/salas.json`, 'utf8');
+    let salas_dados = JSON.parse(data);
 
-    // Insere as salas no banco de dados
-    await salas.insertMany(salas_dados);
+    salas_dados = salas_dados.map(s => {
+      return { _id: s.sala };
+    });
+
+    for (let sala of salas_dados) {
+      await salas.updateOne(
+          { _id: sala._id }, 
+          { $set: sala }, 
+          { upsert: true }
+      );
+    }
     console.log('Salas inseridas com sucesso!');
   } 
   catch (error) {
@@ -96,7 +113,7 @@ async function populaSalas() {
 
 async function login(dados) {
   try {
-    let professor = await professores.findOne({id:dados.id, senha:dados.senha});
+    let professor = await professores.findOne({_id:dados.idUFSC, senha:dados.senha});
 
     if (professor) {
       return professor;
@@ -114,7 +131,7 @@ async function login(dados) {
 
 module.exports = {
   conecta,
-  getTokensCollection: () => tokens,
+  getTokensCollection: () => tokensCollection,
   salasDisponiveis,
   hashSenha,
   populaProfessores,

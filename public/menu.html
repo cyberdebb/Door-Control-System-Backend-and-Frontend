@@ -4,35 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu</title>
+
+    <!-- Importa Vue.js via CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Link para o CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="vue_app">
-        <h1>Bem-vindo ao Menu</h1>
-        <p>Escolha uma das opções abaixo:</p>
-
+    <div id="vue_menu">
+        <h1>Salas Disponíveis</h1>
+        
+        <p>Selecione a sala que você deseja abrir</p>
         <ul>
-            <li><button @click="showSection('salas')">Ver Salas Disponíveis</button></li>
-            <li><button @click="showSection('sair')">Sair</button></li>
+            <li v-for="sala in salas" :key="sala">
+                <img src="./porta.png" alt="porta" width="50" height="50">
+                {{ sala }}
+                <button @click="abrirSala(sala)">Abrir</button>
+            </li>
         </ul>
 
-        <div v-if="currentSection === 'salas'">
-            <h2>Salas Disponíveis</h2>
-            <p>Aqui estão as salas disponíveis:</p>
-            <ul>
-                <li v-for="sala in salas" :key="sala">
-                    {{ sala }}
-                    <button @click="abrirSala(sala)">Abrir</button>
-                </li>
-            </ul>
-            <button @click="fetchSalas">Carregar Salas</button>
-        </div>        
-
-        <div v-if="currentSection === 'sair'">
-            <h2>Sair</h2>
-            <p>Você saiu do sistema.</p>
-            <button @click="logout">Voltar ao Login</button>
-        </div>
+        <button @click="logout">Voltar ao Login</button>
     </div>
+
+    <!-- Importa o script Vue -->
+    <script src="vue_menu.js"></script>
 </body>
 </html>

@@ -1,49 +1,49 @@
 [
   {
-    "nome": "Professor Milton",
     "idUFSC": "milton@grad.ufsc.br",
+    "nome": "Professor Milton",
     "senha": "senhaSuperSecreta123",
     "salasDisponiveis": [101, 102, 106]
   },
   {
+    "idUFSC": "debs",
     "nome": "Professora da Silva",
-    "idUFSC": "dasilva@grad.ufsc.br",
-    "senha": "senhaMaisSegura456",
+    "senha": "123",
     "salasDisponiveis": [102, 103]
   },
   {
-    "nome": "Maria Clara",
     "idUFSC": "amariaclara@grad.ufsc.br",
+    "nome": "Maria Clara",
     "senha": "seguraBemEssaSenha789",
     "salasDisponiveis": [104, 105, 106]
   },
   {
-    "nome": "José Almeida",
     "idUFSC": "josealmeida@grad.ufsc.br",
+    "nome": "José Almeida",
     "senha": "senhaTopComCaracteres321",
     "salasDisponiveis": [101, 104]
   },
   {
-    "nome": "Júlia Borges",
     "idUFSC": "ajuliaborges@grad.ufsc.br",
+    "nome": "Júlia Borges",
     "senha": "forteComoAço654",
     "salasDisponiveis": [102, 105]
   },
   {
-    "nome": "Carlos Henrique",
     "idUFSC": "carloshenrique@grad.ufsc.br",
+    "nome": "Carlos Henrique",
     "senha": "senhaMegaDifícil123",
     "salasDisponiveis": [103, 104, 106]
   },
   {
-    "nome": "Ana Paula",
     "idUFSC": "aanapaula@grad.ufsc.br",
+    "nome": "Ana Paula",
     "senha": "incrivel123456",
     "salasDisponiveis": [101, 103, 105]
   },
   {
-    "nome": "Pedro Souza",
     "idUFSC": "pedrosouza@grad.ufsc.br",
+    "nome": "Pedro Souza",
     "senha": "senhaForteComoTigre987",
     "salasDisponiveis": [104, 105, 106]
   }

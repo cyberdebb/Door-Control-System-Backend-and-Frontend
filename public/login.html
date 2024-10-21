@@ -12,13 +12,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="vue_app">
+    <div id="vue_login">
         <h1>Login</h1>
 
         <!-- Formulário de login -->
         <form @submit.prevent="handleLogin">
-            <label for="idUFSC">ID UFSC:</label>
-            <input type="text" v-model="idUFSC" placeholder="Digite seu ID UFSC" required><br><br>
+            <label for="idUFSC">idUFSC:</label>
+            <input type="text" v-model="idUFSC" placeholder="Digite seu idUFSC" required><br><br>
 
             <label for="senha">Senha:</label>
             <input type="password" v-model="senha" placeholder="Digite sua senha" required><br><br>
@@ -28,6 +28,6 @@
     </div>
 
     <!-- Importa o script Vue -->
-    <script src="vue_app.js"></script>
+    <script src="vue_login.js"></script>
 </body>
 </html>

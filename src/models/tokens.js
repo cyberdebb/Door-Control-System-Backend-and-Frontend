@@ -1,8 +1,13 @@
 const cron = require('node-cron');
 const redis = require('redis');
+const jwt = require('jsonwebtoken'); 
+const dotenv = require('dotenv');
+
 const { getTokensCollection } = require('./database');
 
-const tokens = getTokensCollection();
+dotenv.config()
+
+const SECRET_KEY = process.env.SECRET_KEY;
 
 // Cria um cliente Redis
 const client = redis.createClient({
@@ -15,51 +20,55 @@ client.on('error', (err) => {
     console.error('Erro ao conectar ao Redis:', err);
 });
 
-
 async function verificarToken(req, res, next) {
+    const tokensCollection = getTokensCollection();
     const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!tokensCollection) {
+        return res.status(500).send("Internal server error");
+    }
 
     if (!token) {
         return res.status(403).send("Token não fornecido!");
     }
 
-    // Primeiro, tenta buscar o token no Redis
-    const storedToken = await client.get(`token:${req.userId}`);
+    try {
+        // Verifica o token JWT
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.idUFSC = decoded.idUFSC;
 
-    if (!storedToken) {
-        // Se não encontrar no Redis, buscar no banco de dados
-        try {
-            const tokenDoc = await tokens.findOne({ token: token });
-            if (!tokenDoc) {
-                return res.status(401).send("Token inválido ou expirado!");
-            }
-        } catch (error) {
-            console.error("Erro ao acessar o banco de dados:", error);
-            return res.status(500).send("Erro ao verificar o token.");
+        // Checa o token no Redis
+        const storedToken = await client.get(`token:${req.idUFSC}`);
+
+        if (!storedToken || storedToken !== token) {
+            return res.status(401).send("Token inválido ou expirado!");
         }
-    } else if (storedToken !== token) {
+
+        // Se o token for válido, prossegue
+        next();
+    } catch (error) {
         return res.status(401).send("Token inválido ou expirado!");
     }
-
-    // Se o token for válido, decodifica
-    jwt.verify(token, SECRET_KEY, (error, decoded) => {
-        if (error) {
-            console.error("Token inválido:", error);
-            return res.status(401).send("Token inválido!");
-        }
-        req.userId = decoded.id; // Armazena o ID do usuário decodificado
-        next(); // Prossegue para a próxima rota
-    });
 }
 
 cron.schedule('0 * * * *', async () => {
-    const result = await tokens.deleteMany({
-        createdAt: { $lt: new Date(Date.now() - 3600 * 1000 * 10) } // Remove tokens mais antigos que 10 horas
+    const tokensCollection = getTokensCollection();
+
+    const timeNow = new Date();
+
+    // Calcule o limite de tempo (1 hora atrás)
+    const expirationThreshold = new Date(timeNow.getTime() - 3600 * 1000);
+
+    // Apague tokens com createdAt menor que o limite de expiração
+    const result = await tokensCollection.deleteMany({
+        createdAt: { $lt: expirationThreshold }
     });
+
     console.log(`Tokens expirados removidos: ${result.deletedCount}`);
 });
 
 
 module.exports = {
+    getClient: () => client,
     verificarToken,
   };

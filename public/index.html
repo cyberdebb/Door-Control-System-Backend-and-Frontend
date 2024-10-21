@@ -1,39 +1,37 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Client</title>
+    <title>Redirecionamento</title>
 </head>
-
 <body>
-    <h1>WebSocket Client</h1>
     <script>
-        // Conecta ao servidor WebSocket
-        const socket = new WebSocket('ws://localhost:8080');
-
-        // Quando a conexão é aberta
-        socket.onopen = () => {
-            console.log('Conectado ao servidor');
-            socket.send('E aí, servidor! Aqui é o client 💅');
-        };
-
-        // Quando recebe uma mensagem do servidor
-        socket.onmessage = (event) => {
-            console.log('Mensagem do servidor:', event.data);
-        };
-
-        // Quando a conexão é fechada
-        socket.onclose = () => {
-            console.log('Conexão fechada');
-        };
-
-        // Se der erro
-        socket.onerror = (error) => {
-            console.error('Erro no WebSocket:', error);
-        };
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Envia o token para o servidor verificar
+            fetch('/verificar-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ token })
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/menu.html';
+                } else {
+                    // Token inválido ou expirado
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html';
+                }
+            })
+            .catch(error => {
+                console.error('Erro na verificação do token:', error);
+                window.location.href = '/login.html';
+            });
+        } else {
+            window.location.href = '/login.html';
+        }
     </script>
 </body>
-
 </html>
