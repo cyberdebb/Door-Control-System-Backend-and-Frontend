@@ -16,7 +16,7 @@ app.use(express.static(__dirname + '/public'));
 
 dotenv.config();
 
-const wss = new webSocket.Server({ port:8080 });
+const wss = new webSocket.Server({ port:4000 });
 var clients = new Map();
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -80,46 +80,7 @@ app.post('/login', async function(req, res) {
   }
 });
 
-
-app.get('/lista', async function(req,res) {
-  const idUFSC = req.params.idUFSC;  // Email do professor passado na URL
-
-  try{
-    const portas = await salasDisponiveis(idUFSC);
-    //for each portas?
-  } catch(error){
-    res.status(500).json({error: error.message});
-  }
-});
-
-
-app.get('/abre', function(req, res) {
-  let idPorta = req.body.idPorta;
-  let wsFound = null;
-  
-  for (let [ws, id] of clients) {
-    if (id === idPorta) {
-      wsFound=ws;
-      break;
-    }
-  }
-
-  //!Ver como o front quer que res.json seja enviado, esse é só template
-  if (wsFound) {
-    wsFound.send("abre");  
-    //?Template response
-    res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
-  } else {
-    res.status(404).json({ status: 'error', message: `Porta com ID ${idPorta} não encontrada` });
-  }
-  
-  // Recebe id da porta que é pra abrir
-  // Conectar ao websocket esp e enviar comando abrir porta
-  // Retornar pro front IDporta, simbolizando que foi aberta
-  
-});
-
-app.get('/api/salas', verificarToken, async (req, res) => {
+app.get('/lista', verificarToken, async (req, res) => {
   try {
       const idUFSC = req.idUFSC;
       const salas = await salasDisponiveis(idUFSC);
@@ -135,6 +96,36 @@ app.get('/api/salas', verificarToken, async (req, res) => {
   }
 });
 
+app.post('/abre', function(req, res) {
+  let idPorta = req.body.idPorta;
+
+  let wsFound = null;
+  
+  console.log("ID recebido no body da  rota /abre: ", idPorta);
+
+  for (let [ws, id] of clients) {
+    if (id === idPorta) {
+      wsFound=ws;
+      break;
+    }
+  }
+
+  //!Ver como o front quer que res.json seja enviado, esse é só template
+  if (wsFound) {
+    wsFound.send("abre");  
+    //?Template response
+    return res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
+  }
+
+    // Retorna a lista de WebSockets e portas associadas, e mensagem de erro
+    return res.status(404).json({ 
+      status: 'error', 
+      message: `Porta com ID ${idPorta} não encontrada`, 
+    });
+});
+
+
+
 app.get(/^(.+)$/, function(req, res) {
   try {
       res.write("A pagina que vc busca nao existe")
@@ -149,8 +140,8 @@ async function iniciaServidor() {
   try {
     await conecta();
 
-    app.listen(3000, () => {
-      console.log('Servidor rodando na porta 3000');
+    app.listen(2000, () => {
+      console.log('Servidor rodando na porta 2000');
       const ipAdress = getLocalIPAddress();
       console.log(`Acesse servidor no ip ${ipAdress}`);
     });
@@ -177,10 +168,9 @@ wss.on('connection', (ws) => {
       //Recebe sempre id para garantir que o ws está correto  
       if(porta.id){
         clients.set(ws,porta.id);
-        console.log(`ID ${porta.id} associado ao WebSocket.`);
       }
       if(porta.status){
-        console.log(`Porta ${porta.id}: ${porta.status}`);
+        console.log(`WS: Porta ${porta.id}: ${porta.status}`);
       }
     }
     catch (error){
