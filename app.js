@@ -3,6 +3,7 @@ const webSocket = require('ws');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const os = require('os');
 
 const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
@@ -16,11 +17,25 @@ app.use(express.static(__dirname + '/public'));
 dotenv.config();
 
 const wss = new webSocket.Server({ port:8080 });
+var clients = new Map();
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
 //APP
 iniciaServidor();
+
+// Obter o IP local da máquina
+function getLocalIPAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const net of interfaces[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;  // Retorna o IP da interface
+      }
+    }
+  }
+  return 'IP não encontrado';
+}
 
 app.get('/', function(req, res) {
 });
@@ -78,11 +93,30 @@ app.get('/lista', async function(req,res) {
 });
 
 
-app.get('/abre',function(req,res) {
-  //Recebe id da porta que é pra abrir
-  //
-  let idPorta;
+app.get('/abre', function(req, res) {
+  let idPorta = req.body.idPorta;
+  let wsFound = null;
+  
+  for (let [ws, id] of clients) {
+    if (id === idPorta) {
+      wsFound=ws;
+      break;
+    }
+  }
 
+  //!Ver como o front quer que res.json seja enviado, esse é só template
+  if (wsFound) {
+    wsFound.send("abre");  
+    //?Template response
+    res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
+  } else {
+    res.status(404).json({ status: 'error', message: `Porta com ID ${idPorta} não encontrada` });
+  }
+  
+  // Recebe id da porta que é pra abrir
+  // Conectar ao websocket esp e enviar comando abrir porta
+  // Retornar pro front IDporta, simbolizando que foi aberta
+  
 });
 
 app.get('/api/salas', verificarToken, async (req, res) => {
@@ -117,6 +151,8 @@ async function iniciaServidor() {
 
     app.listen(3000, () => {
       console.log('Servidor rodando na porta 3000');
+      const ipAdress = getLocalIPAddress();
+      console.log(`Acesse servidor no ip ${ipAdress}`);
     });
   } 
   catch (error) {
@@ -127,21 +163,34 @@ async function iniciaServidor() {
 //END APP
 
 
-
-//WEBSOCKET
-wss.on('connection',(ws)=>{
+// WEBSOCKET
+wss.on('connection', (ws) => {
   console.log("Client connected");
 
   ws.send("Bem vindo ao websocket");
+  clients.set(ws, -1);
 
-  ws.on('message',(message)=>{
-    console.log("Mensagem recebida: ${message}");
+  ws.on('message', (message) => {
+    try{
+      const porta = JSON.parse(message);
+     
+      //Recebe sempre id para garantir que o ws está correto  
+      if(porta.id){
+        clients.set(ws,porta.id);
+        console.log(`ID ${porta.id} associado ao WebSocket.`);
+      }
+      if(porta.status){
+        console.log(`Porta ${porta.id}: ${porta.status}`);
+      }
+    }
+    catch (error){
+        console.error("Erro ao processar a mensagem:", error);
+    }
+});
 
-  });
-
-  ws.on('close',()=>{
+  ws.on('close', () => {
+    clients.delete(ws)
     console.log("Cliente desconectado");
   });
 });
-//END WEBSOCKET
-
+// END WEBSOCKET

@@ -35,7 +35,22 @@ createApp({
         },
         abrirSala(sala) {
             alert(`Abrindo a sala: ${sala}`);
-            window.location.href = '/abre';
+
+            // Criar um formulário de forma programática
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/abre';  // A rota no backend
+        
+            // Adicionar o campo idPorta como input hidden no formulário
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'idPorta';
+            input.value = sala;  // O ID da sala a ser enviado
+        
+            // Adicionar o input ao formulário e submeter
+            form.appendChild(input);
+            document.body.appendChild(form);  // Adicionar o formulário ao corpo do documento
+            form.submit();  // Submeter o formulário
         },
         logout() {
             window.location.href = 'login.html';
