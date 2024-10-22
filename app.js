@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const os = require('os');
+const cookieParser = require('cookie-parser');
 
 const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
@@ -13,6 +14,8 @@ var app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+
+app.use(cookieParser()); 
 
 dotenv.config();
 
@@ -68,7 +71,15 @@ app.post('/login', async function(req, res) {
         createdAt: timeNow
       });
 
-      res.json({ message: "Login bem sucedido", token: token });
+      // Define o token como um cookie httpOnly e secure
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Usa secure apenas em produção
+        sameSite: 'Strict', 
+        maxAge: 86400000 // 1 dia
+      });
+    
+      res.json({ message: "Login bem sucedido" });
     } 
     else {
       res.status(401).send("Login inválido");
@@ -79,6 +90,7 @@ app.post('/login', async function(req, res) {
     res.status(500).json({error: error.message});
   }
 });
+
 
 
 app.get('/lista', async function(req,res) {
@@ -134,6 +146,22 @@ app.get('/api/salas', verificarToken, async (req, res) => {
       res.status(500).json({ error: 'Erro ao buscar as salas' });
   }
 });
+
+
+app.post('/verificar-token', verificarToken, (req, res) => {
+  res.status(200).json({ message: 'Token válido', idUFSC: req.idUFSC });
+});
+
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict'
+  });
+  res.status(200).send('Logout realizado com sucesso');
+});
+
 
 app.get(/^(.+)$/, function(req, res) {
   try {

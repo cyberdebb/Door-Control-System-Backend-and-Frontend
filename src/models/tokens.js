@@ -22,13 +22,15 @@ client.on('error', (err) => {
 
 async function verificarToken(req, res, next) {
     const tokensCollection = getTokensCollection();
-    const token = req.headers['authorization']?.split(' ')[1];
+    const token = req.cookies.token; // Obtém o token do cookie
 
     if (!tokensCollection) {
+        console.error("Coleção de tokens não encontrada no banco de dados");
         return res.status(500).send("Internal server error");
     }
 
     if (!token) {
+        console.warn("Token não fornecido no cookie");
         return res.status(403).send("Token não fornecido!");
     }
 
@@ -37,19 +39,27 @@ async function verificarToken(req, res, next) {
         const decoded = jwt.verify(token, SECRET_KEY);
         req.idUFSC = decoded.idUFSC;
 
-        // Checa o token no Redis
+        // Checa se o token existe no Redis para esse usuário
         const storedToken = await client.get(`token:${req.idUFSC}`);
+        if (!storedToken) {
+            console.warn(`Token não encontrado no Redis para o ID ${req.idUFSC}`);
+            return res.status(401).send("Token inválido ou expirado!");
+        }
 
-        if (!storedToken || storedToken !== token) {
+        // Verifica se o token no Redis é o mesmo que foi enviado
+        if (storedToken !== token) {
+            console.warn("Token enviado não corresponde ao token armazenado no Redis");
             return res.status(401).send("Token inválido ou expirado!");
         }
 
         // Se o token for válido, prossegue
         next();
     } catch (error) {
+        console.error("Erro ao verificar o token:", error.message);
         return res.status(401).send("Token inválido ou expirado!");
     }
 }
+
 
 cron.schedule('0 * * * *', async () => {
     const tokensCollection = getTokensCollection();

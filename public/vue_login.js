@@ -11,7 +11,6 @@ createApp({
         async handleLogin() {
             try {
                 console.log("Realizando login");
-                // Enviando dados para a rota de login
                 const response = await fetch('/login', {
                     method: 'POST',
                     headers: {
@@ -23,10 +22,7 @@ createApp({
                     })
                 });
 
-                // Verificando a resposta do servidor
                 if (response.ok) {
-                    const data = await response.json();
-                    localStorage.setItem('token', data.token); // Armazena o token no localStorage
                     window.location.href = 'menu.html';
                 } 
                 else {
