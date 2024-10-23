@@ -76,7 +76,7 @@ app.post('/login', async function(req, res) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // Usa secure apenas em produção
         sameSite: 'Strict', 
-        maxAge: 86400000 // 1 dia
+        maxAge: 3600000 // 1 hora
       });
     
       res.json({ message: "Login bem sucedido" });
