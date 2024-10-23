@@ -4,22 +4,26 @@
     <title>Redirecionamento</title>
 </head>
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        // Faz uma requisição POST para verificar o token
         axios.post('/verificar-token', {}, {
             headers: {
                 'Content-Type': 'application/json'
             }
-            })
-            .then(response => {
-                if(response.ok){
+        })
+        .then(response => {
+            // Verifica se o status da resposta é 200 (sucesso)
+            if (response.status === 200) {
+                // Redireciona para o menu se o token for válido
                 window.location.href = '/menu.html';
-                }
-            })
-            .catch(error => {
-                console.error('Erro na verificação do token:', error);
-                window.location.href = '/login.html';
+            }
+        })
+        .catch(error => {
+            console.error('Erro na verificação do token:', error);
+            // Redireciona para a página de login se o token for inválido
+            window.location.href = '/login.html';
         });
-
     </script>
 </body>
 </html>

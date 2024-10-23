@@ -22,6 +22,8 @@ app.use(cookieParser());
 
 dotenv.config();
 
+const client = getClient();
+
 const wss = new webSocket.Server({ port:4000 });
 var clients = new Map();
 
@@ -51,7 +53,7 @@ app.post('/login', async function(req, res) {
   const idUFSC = req.body.idUFSC;
   const senha = req.body.senha;
 
-  const client = getClient();
+  
   const tokensCollection = getTokensCollection();
   const hash = hashSenha(senha);
 
@@ -216,22 +218,30 @@ app.post('/verificar-token', verificarToken, (req, res) => {
 
 app.post('/logout', async (req, res) => {
   const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(400).send('Nenhum token encontrado.');
+  }
+
   const decoded = jwt.decode(token, SECRET_KEY);
 
-  // Remove o token do Redis (se estiver usando Redis)
-  if (decoded && decoded.idUFSC) {
-      await client.del(`token:${decoded.idUFSC}`);
+  if (!decoded || !decoded.idUFSC) {
+    return res.status(400).send('Token inválido.');
   }
+
+  // Remove o token do Redis (se estiver usando Redis)
+  await client.del(`token:${decoded.idUFSC}`);
 
   // Limpa o cookie
   res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict'
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict'
   });
 
   res.status(200).send('Logout realizado com sucesso');
 });
+
 
 
 app.get(/^(.+)$/, function(req, res) {
