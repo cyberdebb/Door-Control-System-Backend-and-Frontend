@@ -36,17 +36,15 @@ createApp({
             // O restante do código permanece o mesmo
         },
         logout() {
-            // Para remover o cookie, precisamos fazer uma requisição ao servidor
-            fetch('/logout', {
-                method: 'POST'
-            })
-            .then(() => {
-                window.location.href = 'login.html';
-            })
-            .catch(error => {
-                console.error('Erro ao fazer logout:', error);
-                alert('Erro ao fazer logout. Tente novamente.');
-            });
+            // Usando axios para fazer a requisição ao servidor
+            axios.post('/logout')
+                .then(() => {
+                    window.location.href = 'login.html';
+                })
+                .catch(error => {
+                    console.error('Erro ao fazer logout:', error);
+                    alert('Erro ao fazer logout. Tente novamente.');
+                });
         }
     },
     mounted() {
