@@ -19,7 +19,7 @@ app.use(cookieParser());
 
 dotenv.config();
 
-const wss = new webSocket.Server({ port:8080 });
+const wss = new webSocket.Server({ port:4000 });
 var clients = new Map();
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -81,7 +81,11 @@ app.post('/login', async function(req, res) {
         maxAge: 3600000 // 1 hora
       });
     
-      res.json({ message: "Login bem sucedido" });
+      res.json({ 
+        message: "Login bem sucedido", 
+        token:token,
+        isAdmin: isAdmin
+      });
     } 
     else {
       res.status(401).send("Login inválido");
@@ -107,10 +111,13 @@ app.get('/lista', async function(req,res) {
 });
 
 
-app.get('/abre', function(req, res) {
+app.post('/abre', function(req, res) {
   let idPorta = req.body.idPorta;
+
   let wsFound = null;
   
+  console.log("ID recebido no body da  rota /abre: ", idPorta);
+
   for (let [ws, id] of clients) {
     if (id === idPorta) {
       wsFound=ws;
@@ -122,15 +129,14 @@ app.get('/abre', function(req, res) {
   if (wsFound) {
     wsFound.send("abre");  
     //?Template response
-    res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
-  } else {
-    res.status(404).json({ status: 'error', message: `Porta com ID ${idPorta} não encontrada` });
+    return res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
   }
-  
-  // Recebe id da porta que é pra abrir
-  // Conectar ao websocket esp e enviar comando abrir porta
-  // Retornar pro front IDporta, simbolizando que foi aberta
-  
+
+    // Retorna a lista de WebSockets e portas associadas, e mensagem de erro
+    return res.status(404).json({ 
+      status: 'error', 
+      message: `Porta com ID ${idPorta} não encontrada`, 
+    });
 });
 
 app.get('/api/salas', verificarToken, async (req, res) => {
@@ -247,8 +253,8 @@ async function iniciaServidor() {
   try {
     await conecta();
 
-    app.listen(3000, () => {
-      console.log('Servidor rodando na porta 3000');
+    app.listen(2000, () => {
+      console.log('Servidor rodando na porta 2000');
       const ipAdress = getLocalIPAddress();
       console.log(`Acesse servidor no ip ${ipAdress}`);
     });

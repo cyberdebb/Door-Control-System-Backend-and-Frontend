@@ -5,24 +5,19 @@
 </head>
 <body>
     <script>
-        // Não precisamos mais do token aqui
-        fetch('/verificar-token', {
-            method: 'POST',
+        axios.post('/verificar-token', {}, {
             headers: {
                 'Content-Type': 'application/json'
             }
-        })
-        .then(response => {
-            if (response.ok) {
+            })
+            .then(response => {
                 window.location.href = '/menu.html';
-            } else {
+            })
+            .catch(error => {
+                console.error('Erro na verificação do token:', error);
                 window.location.href = '/login.html';
-            }
-        })
-        .catch(error => {
-            console.error('Erro na verificação do token:', error);
-            window.location.href = '/login.html';
         });
+
     </script>
 </body>
 </html>

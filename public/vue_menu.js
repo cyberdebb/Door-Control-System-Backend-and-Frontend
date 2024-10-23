@@ -32,8 +32,16 @@ createApp({
         },
         abrirSala(sala) {
             alert(`Abrindo a sala: ${sala}`);
-
-            // O restante do código permanece o mesmo
+            console.log(`Comando enviado de vue_menu.js abrirSala ${sala}`);
+            axios
+        .post('/abre', { idPorta: sala })
+        .then((response) => {
+          console.log(`Porta ${sala} aberta com sucesso!`, response);
+        })
+        .catch((error) => {
+          console.error('Erro ao abrir a sala:', error);
+        });
+            
         },
         logout() {
             // Usando axios para fazer a requisição ao servidor
