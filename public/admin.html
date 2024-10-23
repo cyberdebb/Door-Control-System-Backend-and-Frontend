@@ -37,9 +37,19 @@
             
             <div class="form-group">
               <label for="idUFSC">idUFSC do Professor:</label>
-              <input type="text" v-model="novoProfessor.idUFSC" id="idUFSC" required placeholder="Digite o idUFSC">
+              <input type="text" v-model="novoProfessor.idUFSC" id="idUFSC" required placeholder="exemplo@ufsc.br">
             </div>
-            
+            <div class="form-group">
+              <label for="senha">Senha do Professor:</label>
+              <input type="text" v-model="novoProfessor.senha" id="senha" required placeholder="Digite a senha">
+            </div>
+            <div class="form-group">
+              <label>Salas Disponíveis:</label>
+              <div v-for="(sala, index) in allData.allSalas" :key="sala._id">
+                <input type="checkbox" :id="'sala_' + index" :value="sala._id" v-model="novoProfessor.salasDisponiveis">
+                <label :for="'sala_' + index">{{ sala._id }}</label>
+              </div>
+            </div>
             <button type="submit">Cadastrar Professor</button>
           </form>
         </section>
@@ -48,8 +58,8 @@
         <section class="admin-section">
           <h2>Professores Cadastrados</h2>
           <ul class="professores-list">
-            <li v-for="professor in professores" :key="professor.idUFSC">
-              <span>{{ professor.nome }} (ID: {{ professor._id }})</span>
+            <li v-for="professor in allData.allProfessores" :key="professor._id">
+              <span>{{ professor.nome }} | Salas: {{ formatarSalas(professor.salasDisponiveis) }}</span>
             </li>
           </ul>
         </section>

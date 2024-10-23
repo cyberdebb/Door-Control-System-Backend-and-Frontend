@@ -6,6 +6,7 @@ std::vector<Porta> Portas =
 {
   {"101A"},{"102A"},{"103A"},{"104A"},{"105A"},{"106A"}
 };
+
 std::vector<WebSocketHandler> wsDoor(6, WebSocketHandler("", 4000, "/"));
 
 void setup() 
@@ -30,7 +31,6 @@ void setup()
   
   for(size_t i=0; i< wsDoor.size();i++)
   {
-
     wsDoor.at(i).setServer(acessPoint.getIpStored());
     wsDoor.at(i).setPorta( &(Portas.at(i)) );
     wsDoor.at(i).begin();

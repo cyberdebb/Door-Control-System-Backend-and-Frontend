@@ -16,9 +16,6 @@ class Porta
   uint8_t _y;
   unsigned long _tempoAbertura;
 
-  
-
-
   public:
   Porta(String id) : _id(id), _aberta(false){};
   ~Porta(){};

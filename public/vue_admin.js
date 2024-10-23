@@ -3,10 +3,15 @@ const { createApp } = Vue;
 createApp({
   data() {
     return {
-      professores: [], // Lista de professores cadastrados
+      allData:{
+        allProfessores: [], // Lista de professores cadastrados
+        allSalas: [] // Salas disponíveis para serem mostradas como checkboxes
+      },
       novoProfessor: {
         nome: '',
-        idUFSC: ''
+        idUFSC: '',
+        senha:'',
+        salasDisponiveis:[]
       },
       isVerifiedAdmin: false, // Controle para verificar se o usuário é admin
       isLoading: true, // Controle para mostrar uma tela de carregamento
@@ -14,18 +19,22 @@ createApp({
     };
   },
   methods: {
+    formatarSalas(salasDisponiveis) {
+      // Juntar o array de salas com vírgula ou outro separador
+      return salasDisponiveis.join(', ');
+    },
+
     async cadastrarProfessor() {
-      const token = localStorage.getItem('token');
       try {
         const response = await axios.post('/admin/cadastrar-professor', this.novoProfessor, {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
+        console.log("Chegou ate aqui");
         if (response.status === 200) {
           alert('Professor cadastrado com sucesso!');
-          this.novoProfessor = { nome: '', idUFSC: '' }; // Limpa os campos
+          this.novoProfessor = { nome: '', idUFSC: '', senha: '', salasDisponiveis: [] }; // Limpa os campos
           this.fetchProfessores(); // Atualiza a lista de professores
         } else {
           alert('Erro ao cadastrar professor: ' + response.statusText);
@@ -35,17 +44,19 @@ createApp({
         alert('Erro ao cadastrar professor. Tente novamente.');
       }
     },
+    
     async fetchProfessores() {
-      const token = localStorage.getItem('token');
       try {
         const response = await axios.get('/admin/listar-professores', {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
         if (response.status === 200) {
-          this.professores = response.data;
+          this.allData.allProfessores = response.data.professores;
+          this.allData.allSalas = response.data.salas;
+          console.log('Professores e Salas recebidos:', response.data.salas); // Verifica se os dados foram recebidos corretamente
+          console.log('Professores e Salas recebidos:', this.allData.allSalas); // Verifica se os dados foram recebidos corretamente
         } else {
           alert('Erro ao carregar professores: ' + response.statusText);
         }
@@ -55,21 +66,21 @@ createApp({
       }
     },
     logout() {
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
+       // Usando axios para fazer a requisição ao servidor
+       axios.post('/logout')
+       .then(() => {
+           window.location.href = 'login.html';
+       })
+       .catch(error => {
+           console.error('Erro ao fazer logout:', error);
+           alert('Erro ao fazer logout. Tente novamente.');
+       });
     },
     async verificarPermissaoAdmin() {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert("Você não está autenticado. Redirecionando para a página de login.");
-        window.location.href = 'login.html';
-        return;
-      }
 
       try {
         const response = await axios.get('/admin', {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });

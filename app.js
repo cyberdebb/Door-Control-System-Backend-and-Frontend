@@ -6,7 +6,10 @@ const dotenv = require('dotenv');
 const os = require('os');
 const cookieParser = require('cookie-parser');
 
-const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login, getProfessoresCollection  } = require('./src/models/database');
+const { conecta, getTokensCollection, 
+        salasDisponiveis, hashSenha, 
+        login, getProfessoresCollection,
+        getSalasCollection, cadastrarProfessor  } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
 
 var app = express();
@@ -98,19 +101,6 @@ app.post('/login', async function(req, res) {
 });
 
 
-
-app.get('/lista', async function(req,res) {
-  const idUFSC = req.params.idUFSC;  // Email do professor passado na URL
-
-  try{
-    const portas = await salasDisponiveis(idUFSC);
-    //for each portas?
-  } catch(error){
-    res.status(500).json({error: error.message});
-  }
-});
-
-
 app.post('/abre', function(req, res) {
   let idPorta = req.body.idPorta;
 
@@ -139,7 +129,7 @@ app.post('/abre', function(req, res) {
     });
 });
 
-app.get('/api/salas', verificarToken, async (req, res) => {
+app.get('/lista', verificarToken, async (req, res) => {
   try {
       const idUFSC = req.idUFSC;
       const salas = await salasDisponiveis(idUFSC);
@@ -165,6 +155,7 @@ app.get('/admin', verificarToken, async (req,res) =>{
 
 
 app.post('/admin/cadastrar-professor', verificarToken, async (req, res) => {
+ 
   // Verifica se o usuário é admin
   if (!req.isAdmin) {
     return res.status(403).send("Acesso negado. Apenas administradores podem cadastrar professores.");
@@ -179,21 +170,9 @@ app.post('/admin/cadastrar-professor', verificarToken, async (req, res) => {
   try {
     // Hasheia a senha do professor antes de salvar no banco de dados
     const hashedSenha = hashSenha(senha);
-    
-    // Cria o objeto do professor
-    const novoProfessor = {
-      _id: idUFSC,
-      nome: nome,
-      salasDisponiveis: salasDisponiveis || [],
-      senha: hashedSenha
-    };
 
-    // Usa upsert para inserir ou atualizar o professor
-    await professores.updateOne(
-      { _id: idUFSC }, 
-      { $set: novoProfessor }, 
-      { upsert: true }
-    );
+    // Reutiliza a função cadastrarProfessor
+    await cadastrarProfessor(idUFSC, nome, salasDisponiveis || [], hashedSenha);
 
     res.status(200).send("Professor cadastrado com sucesso.");
   } 
@@ -202,6 +181,7 @@ app.post('/admin/cadastrar-professor', verificarToken, async (req, res) => {
     res.status(500).send("Erro ao cadastrar professor.");
   }
 });
+
 
 
 app.get('/admin/listar-professores', verificarToken, async (req, res) => {
@@ -213,8 +193,13 @@ app.get('/admin/listar-professores', verificarToken, async (req, res) => {
   try {
     const professores = getProfessoresCollection(); // Obtém a coleção de professores
     const listaProfessores = await professores.find({}).toArray();
+    const salas = getSalasCollection();
+    const listaSalas = await salas.find({}).toArray(); // ou use outra lógica para as salas
 
-    res.status(200).json(listaProfessores);
+    res.status(200).json({
+      professores: listaProfessores,
+      salas: listaSalas
+    });
   } 
   catch (error) {
     console.error('Erro ao listar professores: ', error);
@@ -229,12 +214,22 @@ app.post('/verificar-token', verificarToken, (req, res) => {
 });
 
 
-app.post('/logout', (req, res) => {
+app.post('/logout', async (req, res) => {
+  const token = req.cookies.token;
+  const decoded = jwt.decode(token, SECRET_KEY);
+
+  // Remove o token do Redis (se estiver usando Redis)
+  if (decoded && decoded.idUFSC) {
+      await client.del(`token:${decoded.idUFSC}`);
+  }
+
+  // Limpa o cookie
   res.clearCookie('token', {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict'
   });
+
   res.status(200).send('Logout realizado com sucesso');
 });
 
@@ -253,11 +248,11 @@ async function iniciaServidor() {
   try {
     await conecta();
 
-    app.listen(2000, () => {
+    app.listen(2000, '0.0.0.0', () => {
       console.log('Servidor rodando na porta 2000');
       const ipAdress = getLocalIPAddress();
-      console.log(`Acesse servidor no ip ${ipAdress}`);
-    });
+      console.log(`Acesse o servidor no IP ${ipAdress}`);
+   });
   } 
   catch (error) {
     console.error('Erro ao iniciar o servidor:', error);
@@ -280,7 +275,7 @@ wss.on('connection', (ws) => {
      
       //Recebe sempre id para garantir que o ws está correto  
       if(porta.id){
-        clients.set(ws,porta.id);
+          clients.set(ws,porta.id);
         console.log(`ID ${porta.id} associado ao WebSocket.`);
       }
       if(porta.status){

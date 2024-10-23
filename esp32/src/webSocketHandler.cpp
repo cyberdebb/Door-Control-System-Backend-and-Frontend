@@ -22,7 +22,6 @@ void WebSocketHandler::loop()
 { 
   webSocket.loop(); 
   uint8_t status = _porta->updateDoor();
-  //?Enviar pro ws server quando a porta fechar, pensar em logica
 }
 
 void WebSocketHandler::webSocketEvent(WStype_t type, uint8_t * payload, size_t length) 

@@ -21,7 +21,6 @@ createApp({
                 // Verificando a resposta do servidor
                 if (response.status === 200) {
                     const data = response.data;
-                    localStorage.setItem('token', data.token); // Armazena o token no localStorage
                     if(data.isAdmin){
                         window.location.href = 'admin.html'; // Redireciona para o admin                   
                     }

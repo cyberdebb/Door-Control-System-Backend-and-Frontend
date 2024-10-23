@@ -50,13 +50,35 @@ function hashSenha(senha) {
             .digest('hex');
 }
 
-async function cadastrarProfessor()
-{
-
+async function cadastrarProfessor(idUFSC, nome, salasDisponiveis, senhaHash) {
+  try {
+    // Usa upsert: se o professor existir, atualiza; se não, insere
+    await professores.updateOne(
+      { _id: idUFSC },
+      {
+        $set: {
+          nome: nome,
+          salasDisponiveis: salasDisponiveis,
+          senha: senhaHash
+        }
+      },
+      { upsert: true }
+    );
+    console.log(`Professor ${nome} inserido ou atualizado com sucesso!`);
+  } catch (error) {
+    console.error(`Erro ao cadastrar professor ${nome}: `, error);
+    throw error;
+  }
 }
+
 
 function getProfessoresCollection() {
   return professores;
+}
+
+function getSalasCollection()
+{
+  return salas;
 }
 
 async function populaProfessores() {
@@ -75,22 +97,24 @@ async function populaProfessores() {
       };
     });
 
+    // Chama a função cadastrarProfessor para cada professor no array
     for (let professor of professores_dados) {
-      // Usa upsert: se o professor existir, atualiza; se não, insere
-      await professores.updateOne(
-          { _id: professor._id }, 
-          { $set: professor }, 
-          { upsert: true }
+      await cadastrarProfessor(
+        professor._id,
+        professor.nome,
+        professor.salasDisponiveis,
+        professor.senha // Já está hasheada
       );
     }
-    console.log('Professores inseridos com sucesso!');
 
+    console.log('Todos os professores foram inseridos com sucesso!');
   } 
   catch (error) {
     console.error('Erro ao popular o banco de dados: ', error);
     throw error;
   }
 }
+
 
 
 async function populaSalas() {
@@ -144,8 +168,8 @@ module.exports = {
   getTokensCollection: () => tokensCollection,
   salasDisponiveis,
   hashSenha,
-  populaProfessores,
-  populaSalas,
   login,
-  getProfessoresCollection
+  getProfessoresCollection,
+  getSalasCollection,
+  cadastrarProfessor
 };
