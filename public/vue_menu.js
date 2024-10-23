@@ -1,50 +1,55 @@
 const { createApp } = Vue;
 
 createApp({
-  data() {
-    return {
-      salas: [],
-      idUFSC: ''
-    };
-  },
-  methods: {
-    async fetchSalas() {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await axios.get('/lista', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (response.status === 200) {
-          this.salas = response.data;
-        } else {
-          alert('Erro ao carregar salas: ' + response.statusText);
-        }
-      } catch (error) {
-        console.error('Erro ao acessar a rota protegida:', error);
-        alert('Erro ao acessar a rota protegida. Tente novamente.');
-      }
+    data() {
+        return {
+            salas: [],
+            idUFSC: ''
+        };
     },
-    abrirSala(sala) {
-      alert(`Abrindo a sala: ${sala}`);
+    methods: {
+        async fetchSalas() {
+            try {
+                const response = await fetch('/api/salas', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-      axios
-        .post('/abre', { idPorta: sala })
-        .then((response) => {
-          console.log(`Porta ${sala} aberta com sucesso!`, response);
-        })
-        .catch((error) => {
-          console.error('Erro ao abrir a sala:', error);
-        });
+                if (response.ok) {
+                    this.salas = await response.json();
+                } 
+                else {
+                    const errorMessage = await response.text();
+                    alert('Erro ao carregar salas: ' + errorMessage);                
+                }
+            } 
+            catch (error) {
+                console.error('Erro ao acessar a rota protegida:', error);
+                alert('Erro ao acessar a rota protegida. Tente novamente.');
+            }
+        },
+        abrirSala(sala) {
+            alert(`Abrindo a sala: ${sala}`);
+
+            // O restante do código permanece o mesmo
+        },
+        logout() {
+            // Para remover o cookie, precisamos fazer uma requisição ao servidor
+            fetch('/logout', {
+                method: 'POST'
+            })
+            .then(() => {
+                window.location.href = 'login.html';
+            })
+            .catch(error => {
+                console.error('Erro ao fazer logout:', error);
+                alert('Erro ao fazer logout. Tente novamente.');
+            });
+        }
     },
-    logout() {
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
+    mounted() {
+        this.fetchSalas();
     }
-  },
-  mounted() {
-    this.fetchSalas();
-  }
 }).mount('#vue_menu');

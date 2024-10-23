@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const os = require('os');
+const cookieParser = require('cookie-parser');
 
 const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login, getProfessoresCollection  } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
@@ -14,9 +15,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(cookieParser()); 
+
 dotenv.config();
 
-const wss = new webSocket.Server({ port:4000 });
+const wss = new webSocket.Server({ port:8080 });
 var clients = new Map();
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -70,11 +73,15 @@ app.post('/login', async function(req, res) {
         createdAt: timeNow
       });
 
-      res.json({ 
-        message: "Login bem sucedido", 
-        token: token,
-        isAdmin: isAdmin
+      // Define o token como um cookie httpOnly e secure
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Usa secure apenas em produção
+        sameSite: 'Strict', 
+        maxAge: 3600000 // 1 hora
       });
+    
+      res.json({ message: "Login bem sucedido" });
     } 
     else {
       res.status(401).send("Login inválido");
@@ -86,7 +93,47 @@ app.post('/login', async function(req, res) {
   }
 });
 
-app.get('/lista', verificarToken, async (req, res) => {
+
+
+app.get('/lista', async function(req,res) {
+  const idUFSC = req.params.idUFSC;  // Email do professor passado na URL
+
+  try{
+    const portas = await salasDisponiveis(idUFSC);
+    //for each portas?
+  } catch(error){
+    res.status(500).json({error: error.message});
+  }
+});
+
+
+app.get('/abre', function(req, res) {
+  let idPorta = req.body.idPorta;
+  let wsFound = null;
+  
+  for (let [ws, id] of clients) {
+    if (id === idPorta) {
+      wsFound=ws;
+      break;
+    }
+  }
+
+  //!Ver como o front quer que res.json seja enviado, esse é só template
+  if (wsFound) {
+    wsFound.send("abre");  
+    //?Template response
+    res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
+  } else {
+    res.status(404).json({ status: 'error', message: `Porta com ID ${idPorta} não encontrada` });
+  }
+  
+  // Recebe id da porta que é pra abrir
+  // Conectar ao websocket esp e enviar comando abrir porta
+  // Retornar pro front IDporta, simbolizando que foi aberta
+  
+});
+
+app.get('/api/salas', verificarToken, async (req, res) => {
   try {
       const idUFSC = req.idUFSC;
       const salas = await salasDisponiveis(idUFSC);
@@ -170,34 +217,20 @@ app.get('/admin/listar-professores', verificarToken, async (req, res) => {
 });
 
 
-app.post('/abre', function(req, res) {
-  let idPorta = req.body.idPorta;
 
-  let wsFound = null;
-  
-  console.log("ID recebido no body da  rota /abre: ", idPorta);
-
-  for (let [ws, id] of clients) {
-    if (id === idPorta) {
-      wsFound=ws;
-      break;
-    }
-  }
-
-  //!Ver como o front quer que res.json seja enviado, esse é só template
-  if (wsFound) {
-    wsFound.send("abre");  
-    //?Template response
-    return res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
-  }
-
-    // Retorna a lista de WebSockets e portas associadas, e mensagem de erro
-    return res.status(404).json({ 
-      status: 'error', 
-      message: `Porta com ID ${idPorta} não encontrada`, 
-    });
+app.post('/verificar-token', verificarToken, (req, res) => {
+  res.status(200).json({ message: 'Token válido', idUFSC: req.idUFSC });
 });
 
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict'
+  });
+  res.status(200).send('Logout realizado com sucesso');
+});
 
 
 app.get(/^(.+)$/, function(req, res) {
@@ -214,8 +247,8 @@ async function iniciaServidor() {
   try {
     await conecta();
 
-    app.listen(2000, () => {
-      console.log('Servidor rodando na porta 2000');
+    app.listen(3000, () => {
+      console.log('Servidor rodando na porta 3000');
       const ipAdress = getLocalIPAddress();
       console.log(`Acesse servidor no ip ${ipAdress}`);
     });
@@ -242,9 +275,10 @@ wss.on('connection', (ws) => {
       //Recebe sempre id para garantir que o ws está correto  
       if(porta.id){
         clients.set(ws,porta.id);
+        console.log(`ID ${porta.id} associado ao WebSocket.`);
       }
       if(porta.status){
-        console.log(`WS: Porta ${porta.id}: ${porta.status}`);
+        console.log(`Porta ${porta.id}: ${porta.status}`);
       }
     }
     catch (error){
