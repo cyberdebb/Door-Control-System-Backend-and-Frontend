@@ -50,6 +50,14 @@ function hashSenha(senha) {
             .digest('hex');
 }
 
+async function cadastrarProfessor()
+{
+
+}
+
+function getProfessoresCollection() {
+  return professores;
+}
 
 async function populaProfessores() {
   try {
@@ -129,6 +137,8 @@ async function login(dados) {
 }
 
 
+
+
 module.exports = {
   conecta,
   getTokensCollection: () => tokensCollection,
@@ -136,5 +146,6 @@ module.exports = {
   hashSenha,
   populaProfessores,
   populaSalas,
-  login
+  login,
+  getProfessoresCollection
 };

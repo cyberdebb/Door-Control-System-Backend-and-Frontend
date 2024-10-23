@@ -36,7 +36,7 @@ class wifiSetup
     bool isWifiDataStored(); //Check if there is any stored SSID and Password in NVS 
     void logoutCaptivePortal(); //Logout the Captive Portal
     bool connectWifi(); //Connect to the stored SSID and Password
-    String wifiSearch();//Search and insert in html the first 10 wifi SSID options
+    String wifiScan();//Search and insert in html the first 10 wifi SSID options
 
   public:
 

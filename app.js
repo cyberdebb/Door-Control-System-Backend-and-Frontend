@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const os = require('os');
 
-const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
+const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login, getProfessoresCollection  } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
 
 var app = express();
@@ -50,11 +50,13 @@ app.post('/login', async function(req, res) {
   const hash = hashSenha(senha);
 
   try {
+
     let professor = await login({idUFSC:idUFSC, senha:hash});
 
     if (professor) {
       // Gera um novo token de acesso
-      const token = jwt.sign({ idUFSC: professor._id }, SECRET_KEY, { expiresIn: '1h' });
+      const isAdmin = idUFSC === 'admin';  
+      const token = jwt.sign({ idUFSC: professor._id, isAdmin: isAdmin }, SECRET_KEY, { expiresIn: '1h' });
 
       await client.set(`token:${professor._id}`, token, {
         EX: 3600 // Expira em 1 hora
@@ -68,7 +70,11 @@ app.post('/login', async function(req, res) {
         createdAt: timeNow
       });
 
-      res.json({ message: "Login bem sucedido", token: token });
+      res.json({ 
+        message: "Login bem sucedido", 
+        token: token,
+        isAdmin: isAdmin
+      });
     } 
     else {
       res.status(401).send("Login inválido");
@@ -95,6 +101,74 @@ app.get('/lista', verificarToken, async (req, res) => {
       res.status(500).json({ error: 'Erro ao buscar as salas' });
   }
 });
+
+app.get('/admin', verificarToken, async (req,res) =>{
+  if (req.isAdmin) {
+    res.status(200).json({ message: "Usuário autorizado", isAdmin: true });
+  } else {
+    res.status(403).json({ message: "Acesso negado. Você não é administrador." });
+  }
+});
+
+
+app.post('/admin/cadastrar-professor', verificarToken, async (req, res) => {
+  // Verifica se o usuário é admin
+  if (!req.isAdmin) {
+    return res.status(403).send("Acesso negado. Apenas administradores podem cadastrar professores.");
+  }
+
+  const { idUFSC, nome, senha, salasDisponiveis } = req.body;
+
+  if (!idUFSC || !nome || !senha) {
+    return res.status(400).send("Dados incompletos. Certifique-se de enviar idUFSC, nome e senha.");
+  }
+
+  try {
+    // Hasheia a senha do professor antes de salvar no banco de dados
+    const hashedSenha = hashSenha(senha);
+    
+    // Cria o objeto do professor
+    const novoProfessor = {
+      _id: idUFSC,
+      nome: nome,
+      salasDisponiveis: salasDisponiveis || [],
+      senha: hashedSenha
+    };
+
+    // Usa upsert para inserir ou atualizar o professor
+    await professores.updateOne(
+      { _id: idUFSC }, 
+      { $set: novoProfessor }, 
+      { upsert: true }
+    );
+
+    res.status(200).send("Professor cadastrado com sucesso.");
+  } 
+  catch (error) {
+    console.error('Erro ao cadastrar professor: ', error);
+    res.status(500).send("Erro ao cadastrar professor.");
+  }
+});
+
+
+app.get('/admin/listar-professores', verificarToken, async (req, res) => {
+  // Verifica se o usuário é admin
+  if (!req.isAdmin) {
+    return res.status(403).send("Acesso negado. Apenas administradores podem listar professores.");
+  }
+
+  try {
+    const professores = getProfessoresCollection(); // Obtém a coleção de professores
+    const listaProfessores = await professores.find({}).toArray();
+
+    res.status(200).json(listaProfessores);
+  } 
+  catch (error) {
+    console.error('Erro ao listar professores: ', error);
+    res.status(500).send("Erro ao listar professores.");
+  }
+});
+
 
 app.post('/abre', function(req, res) {
   let idPorta = req.body.idPorta;

@@ -44,6 +44,8 @@ void wifiSetup::startCaptivePortal()
   //   return;
   // }
 
+  //!Criar botao pra dar refresh na lista de wifi
+
   while(WiFi.status() == WL_CONNECTED)
   {
     WiFi.disconnect();
@@ -139,15 +141,27 @@ void wifiSetup::clearNVS() {
     Serial.println("NVS limpo");
 }
 
-String wifiSearch()
+String wifiSetup::wifiScan()
 {
-  WiFi.scanNetworks();
+  String options;
+  
+  uint8_t ssidList = WiFi.scanNetworks();
+  
+  for(size_t i=0; i<ssidList;i++)
+  {
+    options+= "<option value='"+WiFi.SSID(i)+"'>" + WiFi.SSID(i) + "</option>";
+  }
+
+  return options;
 }
 
 String wifiSetup::htmlPage()
 {
+  // Chama wifiScan() para gerar as opções do select
+  String wifiOptions = wifiScan();
+
   // HTML básico para a página de configuração
- String index_html = R"rawliteral(
+  String index_html = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
   <title>Configuracao do Wi-Fi</title>
@@ -157,16 +171,25 @@ String wifiSetup::htmlPage()
   <h2>Configurar Wi-Fi</h2>
   <form action="/save" method="post">
     <label for="ssid">Nome da Rede (SSID):</label><br>
-    <input type="text" id="ssid" name="ssid"><br><br>
+    <select id="ssid" name="ssid">
+      %OPTIONS%
+    </select><br><br>
+
     <label for="password">Senha:</label><br>
     <input type="text" id="password" name="password"><br><br>
+    
     <label for="local_ip">Endereco IP local:</label><br>
     <input type="text" id="local_ip" name="local_ip" placeholder="Digite o IP aqui"><br><br>
+
     <input type="submit" value="Salvar">
   </form>
 </body>
 </html>)rawliteral";
 
-return index_html;
+  // Substitui %OPTIONS% pelas opções de redes Wi-Fi descobertas
+  index_html.replace("%OPTIONS%", wifiOptions);
+
+  return index_html;
 }
+
 

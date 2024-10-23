@@ -1,12 +1,5 @@
 #include "porta.hpp"
 
-
-//   std::array<Porta,6> portas = {{
-//     {"101A",false,0,0},{"102A",false,0,0},{"302A",false,0,0},
-//     {"202B",false,0,0},{"301A",false,0,0},{"112C",false,0,0}
-//   }};
-// }
-
 void Porta::openDoor() {
   Serial.printf("Abrindo porta: %s\n", _id.c_str());
   StickCP2.Display.setTextColor(TFT_GREEN);

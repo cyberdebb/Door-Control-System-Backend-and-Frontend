@@ -4,38 +4,40 @@ createApp({
     data() {
         return {
             idUFSC: '',
-            senha: ''
+            senha: '',
         };
     },
     methods: {
         async handleLogin() {
             try {
                 console.log("Realizando login");
-                // Enviando dados para a rota de login
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        idUFSC: this.idUFSC,
-                        senha: this.senha
-                    })
+                
+                // Enviando dados para a rota de login usando Axios
+                const response = await axios.post('/login', {
+                    idUFSC: this.idUFSC,
+                    senha: this.senha,
                 });
 
                 // Verificando a resposta do servidor
-                if (response.ok) {
-                    const data = await response.json();
+                if (response.status === 200) {
+                    const data = response.data;
                     localStorage.setItem('token', data.token); // Armazena o token no localStorage
-                    window.location.href = 'menu.html';
+                    if(data.isAdmin){
+                        window.location.href = 'admin.html'; // Redireciona para o admin                   
+                    }
+                    else{
+                        window.location.href = 'menu.html'; // Redireciona para o menu                   
+                    }
                 } 
-                else {
-                    const errorMessage = await response.text();
-                    alert(errorMessage);
-                }
             } catch (error) {
-                console.error("Erro ao fazer a requisição:", error);
-                alert("Erro ao fazer login. Tente novamente.");
+                // Verificando se o erro tem uma resposta do servidor
+                if (error.response) {
+                    const errorMessage = error.response.data;
+                    alert(errorMessage);
+                } else {
+                    console.error("Erro ao fazer a requisição:", error);
+                    alert("Erro ao fazer login. Tente novamente.");
+                }
             }
         }
     }

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Administração</title>
+
+  <!-- Importa Vue.js via CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Link para o CSS -->
+  <link rel="stylesheet" href="admin.css">
+  <!-- Importa Axios via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <div id="vue_admin">
+    
+    <!-- Tela de carregamento -->
+    <div v-if="isLoading">
+      <p>Carregando... Aguarde!</p>
+    </div>
+
+    <!-- Conteúdo do painel admin, só exibe se o usuário for admin verificado -->
+    <div v-if="!isLoading && isVerifiedAdmin">
+      <h1>Painel de Administração</h1>
+
+      <!-- Contêiner para seções lado a lado -->
+      <div class="admin-container">
+        <!-- Seção de Cadastro de Professores -->
+        <section class="admin-section">
+          <h2>Cadastrar Novo Professor</h2>
+          <form @submit.prevent="cadastrarProfessor">
+            <div class="form-group">
+              <label for="nome">Nome do Professor:</label>
+              <input type="text" v-model="novoProfessor.nome" id="nome" required placeholder="Digite o nome do professor">
+            </div>
+            
+            <div class="form-group">
+              <label for="idUFSC">ID UFSC do Professor:</label>
+              <input type="text" v-model="novoProfessor.idUFSC" id="idUFSC" required placeholder="Digite o ID UFSC">
+            </div>
+            
+            <button type="submit">Cadastrar Professor</button>
+          </form>
+        </section>
+
+        <!-- Lista de Professores Cadastrados -->
+        <section class="admin-section">
+          <h2>Professores Cadastrados</h2>
+          <ul class="professores-list">
+            <li v-for="professor in professores" :key="professor.idUFSC">
+              <span>{{ professor.nome }} (ID: {{ professor._id }})</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- Botão de Logout -->
+      <button @click="logout">Logout</button>
+    </div>
+  </div>
+
+  <!-- Incluindo o arquivo JavaScript do Vue para Admin -->
+  <script src="vue_admin.js"></script>
+</body>
+</html>
