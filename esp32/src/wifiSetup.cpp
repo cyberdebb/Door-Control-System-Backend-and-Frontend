@@ -8,6 +8,7 @@ void wifiSetup::begin()
 
   // Tenta conectar ao WiFi se os dados estiverem armazenados, caso contrário inicia o Captive Portal
   if (!isWifiDataStored() || !connectWifi()) {
+      wifiScan();//Procura redes wifi para colocar no portal de acesso
       startCaptivePortal();
   }
 
@@ -44,14 +45,12 @@ void wifiSetup::startCaptivePortal()
   //   return;
   // }
 
-  //!Criar botao pra dar refresh na lista de wifi
-
   while(WiFi.status() == WL_CONNECTED)
   {
     WiFi.disconnect();
     delay(100);
   }
-  
+
   WiFi.softAP(ssidCapPortal, passwordCapPortal);
   IPAddress apIP(192, 168, 4, 1);
   dnsServer.start(53, "*", apIP);
@@ -99,7 +98,7 @@ bool wifiSetup::connectWifi()
   unsigned long startAttemptTime = millis();
   
   // Loop até conectar ou atingir o tempo limite
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000) {
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
     Serial.print(".");
     delay(1000); // Espera entre tentativas
   }
@@ -116,7 +115,6 @@ bool wifiSetup::connectWifi()
     wifiDataNVS.end();
     
     Serial.printf("SSID: %s salvo no NVS\n", ssidStored.c_str());
-  // e mintira vai me largar no aeroporto me deixar sem uber e depois me jogar na vala pros bandidos do rock doido
     return true;
   } else {
     // Se falhou, exibe mensagem e inicia o captive portal
@@ -132,6 +130,7 @@ void wifiSetup::loop()
 {
   if(isAcessPointEnabled)
     dnsServer.processNextRequest();
+    delay(100);
 }
 
 void wifiSetup::clearNVS() {
@@ -141,25 +140,24 @@ void wifiSetup::clearNVS() {
     Serial.println("NVS limpo");
 }
 
-String wifiSetup::wifiScan()
+void wifiSetup::wifiScan()
 {
-  String options;
-  
-  uint8_t ssidList = WiFi.scanNetworks();
+  WiFi.mode(WIFI_STA); // Modo Station para escanear redes Wi-Fi
+  WiFi.disconnect(); // Certifique-se de que não está conectado a outra rede
+  delay(200); // Pequeno delay para garantir que o modo foi ativado
+
+  int ssidList = WiFi.scanNetworks();
   
   for(size_t i=0; i<ssidList;i++)
   {
-    options+= "<option value='"+WiFi.SSID(i)+"'>" + WiFi.SSID(i) + "</option>";
+    wifiOptions+= "<option value='"+WiFi.SSID(i)+"'>" + WiFi.SSID(i) + "</option>";
   }
 
-  return options;
+  Serial.printf("Wifi options before: %s \n", wifiOptions.c_str());
 }
 
 String wifiSetup::htmlPage()
 {
-  // Chama wifiScan() para gerar as opções do select
-  String wifiOptions = wifiScan();
-
   // HTML básico para a página de configuração
   String index_html = R"rawliteral(
 <!DOCTYPE HTML><html>

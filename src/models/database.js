@@ -9,8 +9,6 @@ var db, professores, salas, tokensCollection;
 async function conecta() {
   await client.connect();
   db = await client.db(dbName);
-
-  // await db.dropDatabase();
   
   professores = await db.collection("professores");
   salas = await db.collection("salas");

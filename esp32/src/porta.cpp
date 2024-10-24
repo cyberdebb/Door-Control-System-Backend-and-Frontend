@@ -17,7 +17,7 @@ uint8_t Porta::updateDoor() {
   unsigned long tempoPercorrido = millis() - _tempoAbertura;
   if (_aberta) {
     
-    if (tempoPercorrido > 1000) {
+    if (tempoPercorrido > 2000) {
       _aberta = false;
       StickCP2.Display.setTextColor(TFT_WHITE);
       StickCP2.Display.drawString(_id.c_str(), _x, _y);

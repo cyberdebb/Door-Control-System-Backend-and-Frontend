@@ -30,6 +30,7 @@ createApp({
             } catch (error) {
               console.error('Erro ao acessar a rota protegida:', error);
               alert('Erro ao acessar a rota protegida. Tente novamente.');
+              window.location.href = 'login.html';
             }
           },          
         abrirSala(sala) {
@@ -54,6 +55,7 @@ createApp({
                 .catch(error => {
                     console.error('Erro ao fazer logout:', error);
                     alert('Erro ao fazer logout. Tente novamente.');
+                    window.location.href = 'login.html';
                 });
         }
     },

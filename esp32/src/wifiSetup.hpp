@@ -7,6 +7,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 #include <vector>
+#include <string>
 
 #include "webSocketHandler.hpp"
 
@@ -29,6 +30,7 @@ class wifiSetup
     String ssidStored;
     String passwdStored;
     String ipStored;
+    String wifiOptions;
     
 
 
@@ -36,7 +38,7 @@ class wifiSetup
     bool isWifiDataStored(); //Check if there is any stored SSID and Password in NVS 
     void logoutCaptivePortal(); //Logout the Captive Portal
     bool connectWifi(); //Connect to the stored SSID and Password
-    String wifiScan();//Search and insert in html the first 10 wifi SSID options
+    void wifiScan();//Search and insert in html the first 10 wifi SSID options
 
   public:
 

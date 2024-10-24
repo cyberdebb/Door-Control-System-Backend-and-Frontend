@@ -26,7 +26,6 @@ void setup()
   while(WiFi.status() != WL_CONNECTED)
   {
     acessPoint.loop();
-    delay(100);         // Pequeno delay para evitar sobrecarga no watchdog
   }
   
   for(size_t i=0; i< wsDoor.size();i++)
