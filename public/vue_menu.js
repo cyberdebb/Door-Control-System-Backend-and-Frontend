@@ -7,53 +7,56 @@ createApp({
             idUFSC: ''
         };
     },
+
+    
+
+
+
     methods: {
         async fetchSalas() {
-            const token = localStorage.getItem('token'); // Recupera o token do localStorage
-    
             try {
-                const response = await fetch('/api/salas', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`, // Envia o token no cabeçalho
-                        'Content-Type': 'application/json'
-                    }
-                });
-    
-                if (response.ok) {
-                    this.salas = await response.json();
-                } 
-                else {
-                    const errorMessage = await response.text();
-                    alert('Erro ao carregar salas: ' + errorMessage);                
-                }
-            } 
-            catch (error) {
-                console.error('Erro ao acessar a rota protegida:', error);
-                alert('Erro ao acessar a rota protegida. Tente novamente.');
+              const response = await axios.get('/lista', {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+              });
+          
+              if (response.status === 200) {
+                this.salas = response.data; // Se a resposta for OK, armazena as salas
+              } else {
+                const errorMessage = response.statusText;
+                alert('Erro ao carregar salas: ' + errorMessage);
+              }
+            } catch (error) {
+              console.error('Erro ao acessar a rota protegida:', error);
+              alert('Erro ao acessar a rota protegida. Tente novamente.');
+              window.location.href = 'login.html';
             }
-        },
+          },          
         abrirSala(sala) {
             alert(`Abrindo a sala: ${sala}`);
-
-            // Criar um formulário de forma programática
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/abre';  // A rota no backend
-        
-            // Adicionar o campo idPorta como input hidden no formulário
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'idPorta';
-            input.value = sala;  // O ID da sala a ser enviado
-        
-            // Adicionar o input ao formulário e submeter
-            form.appendChild(input);
-            document.body.appendChild(form);  // Adicionar o formulário ao corpo do documento
-            form.submit();  // Submeter o formulário
+            console.log(`Comando enviado de vue_menu.js abrirSala ${sala}`);
+        axios
+        .post('/abre', { idPorta: sala })
+        .then((response) => {
+          console.log(`Porta ${sala} aberta com sucesso!`, response);
+        })
+        .catch((error) => {
+          console.error('Erro ao abrir a sala:', error);
+        });
+            
         },
         logout() {
-            window.location.href = 'login.html';
+            // Usando axios para fazer a requisição ao servidor
+            axios.post('/logout')
+                .then(() => {
+                    window.location.href = 'login.html';
+                })
+                .catch(error => {
+                    console.error('Erro ao fazer logout:', error);
+                    alert('Erro ao fazer logout. Tente novamente.');
+                    window.location.href = 'login.html';
+                });
         }
     },
     mounted() {
