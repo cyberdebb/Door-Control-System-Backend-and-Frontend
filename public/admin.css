@@ -1,0 +1,181 @@
+/* Estilo geral */
+body {
+  background: linear-gradient(135deg, #406E8E, #78C091); /* Gradiente de fundo suave */
+  font-family: 'Arial', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* Painel de administração */
+#vue_admin {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* Contêiner para organizar as seções horizontalmente */
+.admin-container {
+  display: flex;
+  justify-content: space-between; /* Cria espaço entre as seções */
+  align-items: flex-start; /* Alinha as seções no topo */
+  gap: 20px; /* Espaço entre as colunas */
+  margin-top: 20px;
+}
+
+/* Cada seção do admin (cadastro de professor e lista de professores) */
+.admin-section {
+  flex: 1;
+  padding: 20px;
+  background-color: #f3f7fa;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Formulário */
+.form-group {
+  margin-bottom: 20px;
+}
+
+/* Label geral */
+label {
+  font-size: 1.2rem;
+  color: #161925;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Label da checkbox (específico para checkboxes) */
+.form-group label {
+  font-size: 1.1rem;
+  margin-left: 10px; /* Espaço entre a checkbox e o texto */
+  cursor: pointer; /* Para mostrar que o rótulo é clicável */
+  transition: color 0.3s ease;
+}
+
+.form-group label:hover {
+  color: #406E8E; /* Mudança de cor no hover */
+}
+
+/* Input geral */
+input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f3f7fa;
+  box-sizing: border-box;
+}
+
+/* Contêiner para cada linha de checkbox */
+.form-group div {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px; /* Espaço entre as linhas de checkboxes */
+}
+
+/* Estilização da checkbox customizada */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #f3f7fa;
+  border: 2px solid #ccc;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px; /* Deixa as bordas levemente arredondadas */
+  margin-right: 10px; /* Espaço entre a checkbox e o texto */
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Estilo da checkbox quando marcada */
+input[type="checkbox"]:checked {
+  background-color: #406E8E; /* Cor de fundo quando marcada */
+  border-color: #406E8E;
+  transform: scale(1.1); /* Suave aumento no tamanho quando marcada */
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20.285 6.004a1.048 1.048 0 0 0-1.482-.004L10 14.44 5.197 9.619a1.047 1.047 0 1 0-1.491 1.469l5.126 5.195a1.047 1.047 0 0 0 1.491-.003l9.962-9.276a1.047 1.047 0 0 0 .003-1.5z"/></svg>');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+}
+
+/* Hover e foco para dar destaque quando o usuário passa o mouse */
+input[type="checkbox"]:hover {
+  border-color: #78C091;
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  border-color: #78C091;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Lista de Professores */
+.professores-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px; /* Limita a altura da lista */
+  overflow-y: auto; /* Adiciona a barra de rolagem */
+}
+
+.professores-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo do span para os detalhes do professor */
+.professores-list li span {
+  font-size: 1rem;
+  color: #333;
+  margin-right: 10px; /* Espaço entre os itens */
+}
+
+/* Botões */
+button {
+  background-color: #F9FBB2;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: black;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #406E8E;
+  color: white;
+}
+
+/* Limitar a altura da seção de cadastro de professores */
+.admin-section form {
+  max-height: 300px; /* Limita a altura do formulário */
+  overflow-y: auto; /* Adiciona a barra de rolagem */
+  padding-right: 10px; /* Adiciona um pequeno padding para espaço ao lado da barra de rolagem */
+}
+
+/* Opcional: Adicionar um estilo mais suave para a barra de rolagem */
+.admin-section form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-section form::-webkit-scrollbar-thumb {
+  background-color: #78C091;
+  border-radius: 10px;
+}
+
+.admin-section form::-webkit-scrollbar-track {
+  background-color: #f3f7fa;
+}

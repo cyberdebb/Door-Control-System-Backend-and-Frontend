@@ -24,6 +24,8 @@ body {
     text-align: center;
 }
 
+
+
 h1 {
     color: #161925;
     font-size: 2rem;
@@ -83,6 +85,5 @@ button {
 
 button:hover {
     background-color: #406E8E;
+    color: white;
 }
-
-

@@ -6,7 +6,10 @@ const dotenv = require('dotenv');
 const os = require('os');
 const cookieParser = require('cookie-parser');
 
-const { conecta, getTokensCollection, salasDisponiveis, hashSenha, login } = require('./src/models/database');
+const { conecta, getTokensCollection, 
+        salasDisponiveis, hashSenha, 
+        login, getProfessoresCollection,
+        getSalasCollection, cadastrarProfessor  } = require('./src/models/database');
 const { getClient, verificarToken } = require('./src/models/tokens');
 
 var app = express();
@@ -19,7 +22,9 @@ app.use(cookieParser());
 
 dotenv.config();
 
-const wss = new webSocket.Server({ port:8080 });
+const client = getClient();
+
+const wss = new webSocket.Server({ port:4000 });
 var clients = new Map();
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -48,16 +53,18 @@ app.post('/login', async function(req, res) {
   const idUFSC = req.body.idUFSC;
   const senha = req.body.senha;
 
-  const client = getClient();
+  
   const tokensCollection = getTokensCollection();
   const hash = hashSenha(senha);
 
   try {
+
     let professor = await login({idUFSC:idUFSC, senha:hash});
 
     if (professor) {
       // Gera um novo token de acesso
-      const token = jwt.sign({ idUFSC: professor._id }, SECRET_KEY, { expiresIn: '1h' });
+      const isAdmin = idUFSC === 'admin';  
+      const token = jwt.sign({ idUFSC: professor._id, isAdmin: isAdmin }, SECRET_KEY, { expiresIn: '1h' });
 
       await client.set(`token:${professor._id}`, token, {
         EX: 3600 // Expira em 1 hora
@@ -79,7 +86,11 @@ app.post('/login', async function(req, res) {
         maxAge: 3600000 // 1 hora
       });
     
-      res.json({ message: "Login bem sucedido" });
+      res.json({ 
+        message: "Login bem sucedido", 
+        token:token,
+        isAdmin: isAdmin
+      });
     } 
     else {
       res.status(401).send("Login inválido");
@@ -92,23 +103,13 @@ app.post('/login', async function(req, res) {
 });
 
 
-
-app.get('/lista', async function(req,res) {
-  const idUFSC = req.params.idUFSC;  // Email do professor passado na URL
-
-  try{
-    const portas = await salasDisponiveis(idUFSC);
-    //for each portas?
-  } catch(error){
-    res.status(500).json({error: error.message});
-  }
-});
-
-
-app.get('/abre', function(req, res) {
+app.post('/abre', function(req, res) {
   let idPorta = req.body.idPorta;
+
   let wsFound = null;
   
+  console.log("ID recebido no body da  rota /abre: ", idPorta);
+
   for (let [ws, id] of clients) {
     if (id === idPorta) {
       wsFound=ws;
@@ -120,18 +121,17 @@ app.get('/abre', function(req, res) {
   if (wsFound) {
     wsFound.send("abre");  
     //?Template response
-    res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
-  } else {
-    res.status(404).json({ status: 'error', message: `Porta com ID ${idPorta} não encontrada` });
+    return res.json({ status: 'success', idPorta: idPorta, message: 'Comando enviado' });
   }
-  
-  // Recebe id da porta que é pra abrir
-  // Conectar ao websocket esp e enviar comando abrir porta
-  // Retornar pro front IDporta, simbolizando que foi aberta
-  
+
+    // Retorna a lista de WebSockets e portas associadas, e mensagem de erro
+    return res.status(404).json({ 
+      status: 'error', 
+      message: `Porta com ID ${idPorta} não encontrada`, 
+    });
 });
 
-app.get('/api/salas', verificarToken, async (req, res) => {
+app.get('/lista', verificarToken, async (req, res) => {
   try {
       const idUFSC = req.idUFSC;
       const salas = await salasDisponiveis(idUFSC);
@@ -147,20 +147,101 @@ app.get('/api/salas', verificarToken, async (req, res) => {
   }
 });
 
+app.get('/admin', verificarToken, async (req,res) =>{
+  if (req.isAdmin) {
+    res.status(200).json({ message: "Usuário autorizado", isAdmin: true });
+  } else {
+    res.status(403).json({ message: "Acesso negado. Você não é administrador." });
+  }
+});
+
+
+app.post('/admin/cadastrar-professor', verificarToken, async (req, res) => {
+ 
+  // Verifica se o usuário é admin
+  if (!req.isAdmin) {
+    return res.status(403).send("Acesso negado. Apenas administradores podem cadastrar professores.");
+  }
+
+  const { idUFSC, nome, senha, salasDisponiveis } = req.body;
+
+  if (!idUFSC || !nome || !senha) {
+    return res.status(400).send("Dados incompletos. Certifique-se de enviar idUFSC, nome e senha.");
+  }
+
+  try {
+    // Hasheia a senha do professor antes de salvar no banco de dados
+    const hashedSenha = hashSenha(senha);
+
+    // Reutiliza a função cadastrarProfessor
+    await cadastrarProfessor(idUFSC, nome, salasDisponiveis || [], hashedSenha);
+
+    res.status(200).send("Professor cadastrado com sucesso.");
+  } 
+  catch (error) {
+    console.error('Erro ao cadastrar professor: ', error);
+    res.status(500).send("Erro ao cadastrar professor.");
+  }
+});
+
+
+
+app.get('/admin/listar-professores', verificarToken, async (req, res) => {
+  // Verifica se o usuário é admin
+  if (!req.isAdmin) {
+    return res.status(403).send("Acesso negado. Apenas administradores podem listar professores.");
+  }
+
+  try {
+    const professores = getProfessoresCollection(); // Obtém a coleção de professores
+    const listaProfessores = await professores.find({}).toArray();
+    const salas = getSalasCollection();
+    const listaSalas = await salas.find({}).toArray(); // ou use outra lógica para as salas
+
+    res.status(200).json({
+      professores: listaProfessores,
+      salas: listaSalas
+    });
+  } 
+  catch (error) {
+    console.error('Erro ao listar professores: ', error);
+    res.status(500).send("Erro ao listar professores.");
+  }
+});
+
+
 
 app.post('/verificar-token', verificarToken, (req, res) => {
   res.status(200).json({ message: 'Token válido', idUFSC: req.idUFSC });
 });
 
 
-app.post('/logout', (req, res) => {
+app.post('/logout', async (req, res) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(400).send('Nenhum token encontrado.');
+  }
+
+  const decoded = jwt.decode(token, SECRET_KEY);
+
+  if (!decoded || !decoded.idUFSC) {
+    return res.status(400).send('Token inválido.');
+  }
+
+  // Remove o token do Redis (se estiver usando Redis)
+  await client.del(`token:${decoded.idUFSC}`);
+
+  // Limpa o cookie
   res.clearCookie('token', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Strict'
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict'
   });
+
   res.status(200).send('Logout realizado com sucesso');
 });
+
 
 
 app.get(/^(.+)$/, function(req, res) {
@@ -177,11 +258,11 @@ async function iniciaServidor() {
   try {
     await conecta();
 
-    app.listen(3000, () => {
-      console.log('Servidor rodando na porta 3000');
+    app.listen(2000, '0.0.0.0', () => {
+      console.log('Servidor rodando na porta 2000');
       const ipAdress = getLocalIPAddress();
-      console.log(`Acesse servidor no ip ${ipAdress}`);
-    });
+      console.log(`Acesse o servidor no IP ${ipAdress}`);
+   });
   } 
   catch (error) {
     console.error('Erro ao iniciar o servidor:', error);
@@ -204,7 +285,7 @@ wss.on('connection', (ws) => {
      
       //Recebe sempre id para garantir que o ws está correto  
       if(porta.id){
-        clients.set(ws,porta.id);
+          clients.set(ws,porta.id);
         console.log(`ID ${porta.id} associado ao WebSocket.`);
       }
       if(porta.status){

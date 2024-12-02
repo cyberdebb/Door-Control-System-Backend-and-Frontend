@@ -38,6 +38,7 @@ async function verificarToken(req, res, next) {
         // Verifica o token JWT
         const decoded = jwt.verify(token, SECRET_KEY);
         req.idUFSC = decoded.idUFSC;
+        req.isAdmin = decoded.isAdmin;
 
         // Checa se o token existe no Redis para esse usuário
         const storedToken = await client.get(`token:${req.idUFSC}`);
@@ -52,7 +53,12 @@ async function verificarToken(req, res, next) {
             return res.status(401).send("Token inválido ou expirado!");
         }
 
-        // Se o token for válido, prossegue
+        // Se for uma rota de admin e o usuário não for admin, retorna erro
+        if (req.originalUrl.includes('/admin') && !req.isAdmin) {
+            return res.status(403).send("Acesso negado. Apenas administradores podem acessar esta rota.");
+        }
+
+        // Se o token for válido e o usuário for admin (ou não for rota de admin), prossegue
         next();
     } catch (error) {
         console.error("Erro ao verificar o token:", error.message);
