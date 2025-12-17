@@ -115,7 +115,3 @@ PORT=5000 node app.js
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for more details.
-
----
-
-Last updated: December 2025
